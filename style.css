@@ -14,7 +14,7 @@ line-height:1.2;
 
 
 h1{
-margin-top:20px;
+margin-top:12px;
 }
 
 .subtitle{
@@ -176,6 +176,7 @@ document.getElementById("restart").addEventListener("click", function(){
 location.reload()
 
 })
+
 
 
 
