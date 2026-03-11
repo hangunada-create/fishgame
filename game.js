@@ -5,7 +5,12 @@ const failSound = new Audio("sound/fail.mp3")
 const clearSound = new Audio("sound/clear.mp3")
 
 bgm.loop = true
-bgm.volume = 0.4
+
+bgm.volume = 0.3
+flipSound.volume = 0.6
+matchSound.volume = 0.8
+failSound.volume = 0.6
+clearSound.volume = 0.8
 
 
 const fishImages = [
@@ -153,4 +158,5 @@ lock = false
 }
 
 }
+
 
