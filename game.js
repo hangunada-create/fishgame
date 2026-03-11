@@ -159,4 +159,14 @@ lock = false
 
 }
 
+const restartBtn = document.getElementById("restart")
+
+restartBtn.addEventListener("click", function(){
+
+location.reload()
+
+})
+
+
+
 
