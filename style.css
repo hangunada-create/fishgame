@@ -116,7 +116,7 @@ text-align:center;
 
 #cat{
 
-width:60px;
+width:150px;
 
 animation:dance 0.6s infinite alternate;
 
@@ -168,6 +168,7 @@ document.getElementById("restart").addEventListener("click", function(){
 location.reload()
 
 })
+
 
 
 
