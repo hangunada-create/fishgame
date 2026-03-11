@@ -19,17 +19,30 @@ const backImage = "images/back.png"
 
 let cards = [...fishImages, ...fishImages]
 
-cards.sort(() => Math.random() - 0.5)
+cards.sort(() => 0.5 - Math.random())
 
 const board = document.getElementById("game-board")
 
 let firstCard = null
 let secondCard = null
-let lockBoard = false
+let lock = false
+
+let time = 0
+let timerInterval = null
+let matchCount = 0
+
+timerInterval = setInterval(()=>{
+
+time++
+
+document.getElementById("timer").innerText = time
+
+},1000)
 
 cards.forEach(src => {
 
 const card = document.createElement("div")
+
 card.classList.add("card")
 
 card.innerHTML = `
@@ -56,7 +69,8 @@ board.appendChild(card)
 
 function flipCard(card, src){
 
-if(lockBoard) return
+if(lock) return
+
 if(card.classList.contains("flipped")) return
 
 card.classList.add("flipped")
@@ -64,6 +78,7 @@ card.classList.add("flipped")
 if(!firstCard){
 
 firstCard = {card, src}
+
 return
 
 }
@@ -78,12 +93,22 @@ function checkMatch(){
 
 if(firstCard.src === secondCard.src){
 
+matchCount++
+
+if(matchCount === 12){
+
+clearInterval(timerInterval)
+
+document.getElementById("game-clear").style.display = "block"
+
+}
+
 firstCard = null
 secondCard = null
 
 }else{
 
-lockBoard = true
+lock = true
 
 setTimeout(()=>{
 
@@ -93,7 +118,7 @@ secondCard.card.classList.remove("flipped")
 firstCard = null
 secondCard = null
 
-lockBoard = false
+lock = false
 
 },1000)
 
