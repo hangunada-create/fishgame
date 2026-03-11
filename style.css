@@ -137,3 +137,38 @@ transform:rotate(10deg) scale(1.1);
 
 }
 
+#restart{
+
+margin-top:15px;
+
+padding:10px 20px;
+
+font-size:18px;
+
+border:none;
+
+border-radius:10px;
+
+background:#3da9fc;
+
+color:white;
+
+cursor:pointer;
+
+}
+
+#restart:hover{
+
+background:#1e88e5;
+
+}
+
+document.getElementById("restart").addEventListener("click", function(){
+
+location.reload()
+
+})
+
+
+
+
