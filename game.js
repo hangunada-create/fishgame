@@ -1,3 +1,13 @@
+const bgm = new Audio("sound/bgm.mp3")
+const flipSound = new Audio("sound/flip.mp3")
+const matchSound = new Audio("sound/match.mp3")
+const failSound = new Audio("sound/fail.mp3")
+const clearSound = new Audio("sound/clear.mp3")
+
+bgm.loop = true
+bgm.volume = 0.4
+
+
 const fishImages = [
 
 "images/fish1.png",
@@ -39,6 +49,8 @@ document.getElementById("timer").innerText = time
 
 },1000)
 
+bgm.play()
+
 cards.forEach(src => {
 
 const card = document.createElement("div")
@@ -75,6 +87,10 @@ if(card.classList.contains("flipped")) return
 
 card.classList.add("flipped")
 
+  flipSound.currentTime = 0
+flipSound.play()
+
+
 if(!firstCard){
 
 firstCard = {card, src}
@@ -93,9 +109,17 @@ function checkMatch(){
 
 if(firstCard.src === secondCard.src){
 
+  matchSound.currentTime = 0
+matchSound.play()
+
+
 matchCount++
 
 if(matchCount === 12){
+
+  clearSound.play()
+bgm.pause()
+
 
 clearInterval(timerInterval)
 
@@ -107,6 +131,10 @@ firstCard = null
 secondCard = null
 
 }else{
+
+  failSound.currentTime = 0
+failSound.play()
+
 
 lock = true
 
@@ -125,3 +153,4 @@ lock = false
 }
 
 }
+
