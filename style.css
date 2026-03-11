@@ -86,10 +86,23 @@ grid-template-columns:repeat(4,1fr);
 /* ===== 타이머 UI ===== */
 
 #ui{
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+gap:15px;
+
 font-size:20px;
+
 margin-bottom:10px;
+
 font-weight:bold;
+
 }
+
 
 /* ===== 게임 종료 화면 ===== */
 
@@ -102,10 +115,13 @@ text-align:center;
 /* ===== 216 고양이 ===== */
 
 #cat{
-width:200px;
-margin-top:10px;
+
+width:60px;
+
 animation:dance 0.6s infinite alternate;
+
 }
+
 
 /* ===== 고양이 춤 애니메이션 ===== */
 
@@ -120,3 +136,4 @@ transform:rotate(10deg) scale(1.1);
 }
 
 }
+
