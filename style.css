@@ -19,7 +19,7 @@ margin-top:12px;
 
 .subtitle{
 color:#555;
-margin-bottom:20px;
+margin-bottom:12px;
 }
 
 #game-board{
@@ -176,6 +176,7 @@ document.getElementById("restart").addEventListener("click", function(){
 location.reload()
 
 })
+
 
 
 
