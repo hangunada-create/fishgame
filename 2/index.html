@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>반반 생선 짝맞추기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* 레이아웃: 위에 기록판, 가운데 24장 카드 판, 아래에 '완성된 생선' 도감 줄. 1탄의 하늘·바다 색을 이어받음 */
+:root{
+  --sea:#f2f6f9;        /* 바탕 (1탄 배경) */
+  --ink:#1d3557;        /* 글자 */
+  --muted:#5b6b80;
+  --wave:#3da9fc;       /* 1탄 버튼 파랑 */
+  --wave-deep:#1e88e5;
+  --card:#ffffff;
+  --line:#d6e3ee;
+  --coral:#ff7a59;      /* 짝 맞춤 표시 */
+  --shadow:rgba(29,53,87,.14);
+  --display:"Jua","Gowun Dodum",system-ui,sans-serif;
+  --body:"Gowun Dodum",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --sea:#0e1a26;--ink:#e6eef6;--muted:#9fb2c6;--wave:#4fb3ff;--wave-deep:#7cc6ff;
+  --card:#f7fafc;--line:#25384a;--coral:#ff8f72;--shadow:rgba(0,0,0,.45);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --sea:#0e1a26;--ink:#e6eef6;--muted:#9fb2c6;--wave:#4fb3ff;--wave-deep:#7cc6ff;
+  --card:#f7fafc;--line:#25384a;--coral:#ff8f72;--shadow:rgba(0,0,0,.45);color-scheme:dark}
+
+body{background:var(--sea);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 32px}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+
+header{text-align:center;display:flex;flex-direction:column;gap:4px}
+.eyebrow{font-family:var(--display);color:var(--wave);letter-spacing:.08em;font-size:14px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,7vw,40px);margin:0;line-height:1.15;text-wrap:balance}
+.sub{color:var(--muted);margin:0;text-wrap:balance}
+
+.hud{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
+.stat{display:flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:999px;background:var(--card);color:#1d3557;box-shadow:0 2px 6px var(--shadow)}
+.stat b{font-family:var(--display);font-weight:400;font-size:20px;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:#5b6b80}
+.ctl{font:inherit;font-size:13px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.ctl:hover{border-color:var(--wave)}
+button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
+
+#board{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+@media (max-width:600px){#board{grid-template-columns:repeat(4,1fr);gap:8px}}
+.card{aspect-ratio:1/1;max-width:100%;perspective:900px;border:0;padding:0;background:none;cursor:pointer}
+.inner{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.card.flipped .inner,.card.matched .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;overflow:hidden;background:var(--card);box-shadow:0 4px 10px var(--shadow)}
+.back img{width:100%;height:100%;object-fit:cover}
+.front{transform:rotateY(180deg);display:flex;align-items:center}
+.front img{width:100%;height:84%;object-fit:contain;mix-blend-mode:multiply}
+/* 잘린 쪽을 카드 가장자리에 붙이고 점선으로 칼자국 표시 */
+.front.L img{object-position:right center}
+.front.R img{object-position:left center}
+.front.L::after,.front.R::after{content:"";position:absolute;top:8%;bottom:8%;border-left:2px dashed #b9c9d8}
+.front.L::after{right:3px}.front.R::after{left:3px}
+.card.matched .face{box-shadow:0 0 0 3px var(--coral),0 4px 10px var(--shadow)}
+.card.matched{cursor:default}
+.card.matched .front{animation:pop .4s ease}
+.card.wrong .front{animation:shake .35s}
+@keyframes pop{50%{transform:rotateY(180deg) scale(1.08)}}
+@keyframes shake{25%{transform:rotateY(180deg) translateX(-4px)}75%{transform:rotateY(180deg) translateX(4px)}}
+
+.dex{display:flex;flex-direction:column;gap:6px}
+.dex h2{font-family:var(--display);font-weight:400;font-size:17px;margin:0;display:flex;justify-content:space-between}
+#last{color:var(--coral);font-size:15px}
+.dex h2 small{font-family:var(--body);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+#dex{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:8px;border-radius:12px;border:1px dashed var(--line)}
+@media (max-width:600px){#dex{grid-template-columns:repeat(4,1fr)}}
+.slot{max-width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--card);border-radius:8px;padding:4px 2px}
+.slot .pic{aspect-ratio:3/2;width:100%;display:flex;align-items:center;justify-content:center}
+.slot b{font-family:var(--display);font-weight:400;font-size:12px;color:#9aa9b8;line-height:1.2}
+.slot.got b{color:#1d3557}
+.slot img{max-width:100%;max-height:100%;mix-blend-mode:multiply;filter:grayscale(1) brightness(.6);opacity:.22;transition:filter .5s,opacity .5s,transform .5s}
+.slot.got img{filter:none;opacity:1;animation:swim .6s ease}
+@keyframes swim{0%{transform:translateY(6px) scale(.6)}60%{transform:translateY(-3px) scale(1.15)}100%{transform:none}}
+
+#clear{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(14,26,38,.55);
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:20}
+.panel{background:#ffffff;color:#1d3557;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
+.panel img{width:140px;border-radius:14px;animation:dance .6s infinite alternate}
+.panel h2{font-family:var(--display);font-weight:400;font-size:28px;margin:0}
+.panel .result{font-variant-numeric:tabular-nums;color:#5b6b80;margin:0}
+.panel .msg{margin:0;font-size:16px}
+.badge{font-family:var(--display);background:#fff1ec;color:#d9532f;border-radius:999px;padding:3px 12px}
+.go{font-family:var(--display);font-size:19px;border:0;border-radius:12px;padding:10px 24px;background:#3da9fc;color:#fff;cursor:pointer}
+.go:hover{background:#1e88e5}
+@keyframes dance{from{transform:rotate(-8deg)}to{transform:rotate(8deg) scale(1.06)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">이상한생선가게 기억 게임 2탄</div>
+    <h1>반반 생선 짝맞추기</h1>
+    <p class="sub">이음수산 생선 12마리가 반으로 갈라졌어요. 머리 쪽 반과 꼬리 쪽 반을 찾아 한 마리로 이어 주세요.</p>
+  </header>
+
+  <div class="hud">
+    <div class="stat"><span>시간</span><b id="time">0</b><span>초</span></div>
+    <div class="stat"><span>뒤집기</span><b id="flips">0</b><span>번</span></div>
+    <div class="stat"><span>최고</span><b id="best">–</b><span>초</span></div>
+    <button class="ctl" id="music" type="button">🎵 음악 끄기</button>
+    <button class="ctl" id="again" type="button">새 판</button>
+  </div>
+
+  <div id="board" aria-label="카드 판"></div>
+
+  <section class="dex">
+    <h2><span>이어 붙인 생선 <span id="last" aria-live="polite"></span></span> <small id="count">0 / 12</small></h2>
+    <div id="dex"></div>
+  </section>
+</div>
+
+<div id="clear" hidden>
+  <div class="panel" role="dialog" aria-labelledby="clearTitle">
+    <img src="images/cat216.webp" alt="엄지를 든 216고양이">
+    <h2 id="clearTitle">12마리 완성!</h2>
+    <p class="result" id="result"></p>
+    <span class="badge" id="genius" hidden>60초 안에 성공 · 기억력 천재</span>
+    <p class="msg" id="msg"></p>
+    <button class="go" id="restart" type="button">한 판 더</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const NAMES = ["광어","민어","밴댕이","병어","삼치","숭어","아나고","웅어","전어","준치","참돔","홍어"];
+  const N = NAMES.length;
+  const $ = id => document.getElementById(id);
+  const snd = n => { const a = new Audio("sound/" + n + ".mp3"); a.preload = "auto"; return a; };
+  const S = { bgm: snd("bgm"), flip: snd("flip"), match: snd("match"), fail: snd("fail"), clear: snd("clear") };
+  S.bgm.loop = true; S.bgm.volume = .3; S.flip.volume = .6; S.match.volume = .8; S.fail.volume = .6; S.clear.volume = .8;
+  let musicOn = true, started = false;
+  const play = a => { try { a.currentTime = 0; const p = a.play(); if (p) p.catch(()=>{}); } catch(e){} };
+
+  const KEY = "ieum-halffish-best";
+  const getBest = () => { try { const v = parseInt(localStorage.getItem(KEY), 10); return isNaN(v) ? null : v; } catch(e){ return null; } };
+  const setBest = v => { try { localStorage.setItem(KEY, String(v)); } catch(e){} };
+
+  let first = null, lock = false, matched = 0, flips = 0, time = 0, timer = null;
+
+  // 도감 줄
+  const dex = $("dex");
+  for (let i = 1; i <= N; i++) {
+    const s = document.createElement("div");
+    s.className = "slot"; s.id = "slot" + i;
+    s.innerHTML = '<div class="pic"><img src="images/whole/f' + i + '.webp" alt=""></div><b>?</b>';
+    dex.appendChild(s);
+  }
+
+  function shuffle(a){ for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  function deal(){
+    clearInterval(timer); timer = null;
+    first = null; lock = false; matched = 0; flips = 0; time = 0;
+    $("time").textContent = 0; $("flips").textContent = 0; $("count").textContent = "0 / " + N;
+    const b = getBest(); $("best").textContent = b == null ? "–" : b;
+    document.querySelectorAll(".slot").forEach(s => { s.classList.remove("got"); s.querySelector("b").textContent = "?"; });
+    $("last").textContent = "";
+    $("clear").hidden = true;
+    const board = $("board"); board.innerHTML = "";
+    const cards = [];
+    for (let i = 1; i <= N; i++) { cards.push({ fish: i, side: "L" }, { fish: i, side: "R" }); }
+    shuffle(cards).forEach(c => {
+      const el = document.createElement("button");
+      el.type = "button"; el.className = "card";
+      el.setAttribute("aria-label", "뒤집힌 카드");
+      el.innerHTML = '<div class="inner"><div class="face back"><img src="images/back.webp" alt=""></div>' +
+        '<div class="face front ' + c.side + '"><img src="images/half/f' + c.fish + c.side + '.webp" alt=""></div></div>';
+      el.addEventListener("click", () => flip(el, c));
+      board.appendChild(el);
+    });
+  }
+
+  function startClock(){
+    if (timer) return;
+    timer = setInterval(() => { time++; $("time").textContent = time; }, 1000);
+  }
+
+  function flip(el, c){
+    if (lock || el.classList.contains("flipped") || el.classList.contains("matched")) return;
+    if (!started) { started = true; if (musicOn) play(S.bgm); }
+    startClock();
+    el.classList.add("flipped");
+    el.setAttribute("aria-label", NAMES[c.fish - 1] + " " + (c.side === "L" ? "머리 쪽" : "꼬리 쪽") + " 반");
+    flips++; $("flips").textContent = flips;
+    play(S.flip);
+    if (!first) { first = { el, c }; return; }
+    const a = first; first = null;
+    if (a.c.fish === c.fish && a.c.side !== c.side) {
+      [a.el, el].forEach(x => { x.classList.remove("flipped"); x.classList.add("matched"); });
+      play(S.match);
+      matched++; $("count").textContent = matched + " / " + N;
+      const slot = $("slot" + c.fish); slot.classList.add("got"); slot.querySelector("b").textContent = NAMES[c.fish - 1];
+      $("last").textContent = "· " + NAMES[c.fish - 1] + " 완성!";
+      if (matched === N) finish();
+    } else {
+      lock = true; play(S.fail);
+      [a.el, el].forEach(x => x.classList.add("wrong"));
+      setTimeout(() => {
+        [a.el, el].forEach(x => { x.classList.remove("flipped", "wrong"); x.setAttribute("aria-label", "뒤집힌 카드"); });
+        lock = false;
+      }, 900);
+    }
+  }
+
+  function finish(){
+    clearInterval(timer); timer = null;
+    S.bgm.pause(); play(S.clear);
+    const prev = getBest();
+    $("result").textContent = time + "초 · 뒤집기 " + flips + "번";
+    $("genius").hidden = time > 60;
+    let msg;
+    if (prev == null) msg = "첫 기록이에요. 다음 판은 이 기록과 겨뤄 봐요.";
+    else if (time < prev) msg = "지난 최고 기록보다 " + (prev - time) + "초 빨라졌어요!";
+    else if (time === prev) msg = "최고 기록과 똑같아요. 한 끗 차이!";
+    else msg = "최고 기록은 " + prev + "초. 지난번의 나에게 조금씩 다가가는 중이에요.";
+    $("msg").textContent = msg;
+    if (prev == null || time < prev) setBest(time);
+    setTimeout(() => { $("clear").hidden = false; $("restart").focus(); }, 500);
+  }
+
+  $("music").addEventListener("click", () => {
+    musicOn = !musicOn;
+    $("music").textContent = musicOn ? "🎵 음악 끄기" : "🎵 음악 켜기";
+    if (musicOn && started && matched < N) play(S.bgm); else S.bgm.pause();
+  });
+  const again = () => { if (musicOn && started) play(S.bgm); deal(); };
+  $("again").addEventListener("click", again);
+  $("restart").addEventListener("click", again);
+
+  deal();
+})();
+</script>
+</body>
+</html>
