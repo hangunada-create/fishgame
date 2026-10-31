@@ -85,14 +85,24 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
 
 #clear{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(14,26,38,.55);
   padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:20}
-.panel{background:#ffffff;color:#1d3557;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
-.panel img{width:140px;border-radius:14px;animation:dance .6s infinite alternate}
+.panel{background:#ffffff;color:#1d3557;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;max-height:100%;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
+.panel .cat{flex-shrink:0;width:140px;border-radius:14px;animation:dance .6s infinite alternate}
 .panel h2{font-family:var(--display);font-weight:400;font-size:28px;margin:0}
 .panel .result{font-variant-numeric:tabular-nums;color:#5b6b80;margin:0}
 .panel .msg{margin:0;font-size:16px}
 .badge{font-family:var(--display);background:#fff1ec;color:#d9532f;border-radius:999px;padding:3px 12px}
 .go{font-family:var(--display);font-size:19px;border:0;border-radius:12px;padding:10px 24px;background:#3da9fc;color:#fff;cursor:pointer}
 .go:hover{background:#1e88e5}
+.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.go.sub{background:#fff;color:#1e88e5;box-shadow:inset 0 0 0 2px #3da9fc}
+.go.sub:hover{background:#eef7ff}
+#fishList{width:100%;display:flex;flex-direction:column;gap:8px;padding-top:12px;margin-top:4px;border-top:1px dashed #d6e3ee}
+#fishList h3{font-family:var(--display);font-weight:400;font-size:18px;margin:0}
+#fishList .hint{margin:0;font-size:13px;color:#5b6b80}
+.fish{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px;border-radius:12px;background:#f5f9fc}
+.fish img{width:100%;max-width:260px;height:auto;mix-blend-mode:multiply}
+.fish b{font-family:var(--display);font-weight:400;font-size:18px;color:#1d3557}
+.fish small{color:#9aa9b8;font-variant-numeric:tabular-nums}
 @keyframes dance{from{transform:rotate(-8deg)}to{transform:rotate(8deg) scale(1.06)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -124,12 +134,19 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
 
 <div id="clear" hidden>
   <div class="panel" role="dialog" aria-labelledby="clearTitle">
-    <img src="images/cat216.webp" alt="엄지를 든 216고양이">
+    <img class="cat" src="images/cat216.webp" alt="엄지를 든 216고양이">
     <h2 id="clearTitle">12마리 완성!</h2>
     <p class="result" id="result"></p>
     <span class="badge" id="genius" hidden>60초 안에 성공 · 기억력 천재</span>
     <p class="msg" id="msg"></p>
-    <button class="go" id="restart" type="button">한 판 더</button>
+    <div class="btns">
+      <button class="go" id="restart" type="button">한 판 더</button>
+      <button class="go sub" id="showFish" type="button" aria-expanded="false" aria-controls="fishList">생선 확인</button>
+    </div>
+    <div id="fishList" hidden>
+      <h3>오늘 이어 붙인 생선 12마리</h3>
+      <p class="hint">위아래로 움직여서 한 마리씩 보세요.</p>
+    </div>
   </div>
 </div>
 
@@ -169,6 +186,7 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
     document.querySelectorAll(".slot").forEach(s => { s.classList.remove("got"); s.querySelector("b").textContent = "?"; });
     $("last").textContent = "";
     $("clear").hidden = true;
+    $("fishList").hidden = true; $("showFish").textContent = "생선 확인"; $("showFish").setAttribute("aria-expanded", "false");
     const board = $("board"); board.innerHTML = "";
     const cards = [];
     for (let i = 1; i <= N; i++) { cards.push({ fish: i, side: "L" }, { fish: i, side: "R" }); }
@@ -239,6 +257,28 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
   const again = () => { if (musicOn && started) play(S.bgm); deal(); };
   $("again").addEventListener("click", again);
   $("restart").addEventListener("click", again);
+
+  // 생선 확인 목록
+  const list = $("fishList");
+  NAMES.forEach((name, k) => {
+    const d = document.createElement("div");
+    d.className = "fish";
+    d.innerHTML = '<img src="images/whole/f' + (k + 1) + '.webp" alt="' + name + '" loading="lazy"><b>' + name + '</b><small>' + (k + 1) + ' / ' + N + '</small>';
+    list.appendChild(d);
+  });
+  const again2 = document.createElement("button");
+  again2.type = "button"; again2.className = "go"; again2.textContent = "한 판 더";
+  again2.style.alignSelf = "center";
+  again2.addEventListener("click", again);
+  list.appendChild(again2);
+  $("showFish").addEventListener("click", () => {
+    const open = list.hidden;
+    list.hidden = !open;
+    $("showFish").textContent = open ? "생선 접기" : "생선 확인";
+    $("showFish").setAttribute("aria-expanded", String(open));
+    if (open) list.scrollIntoView({ behavior: "smooth", block: "start" });
+    else document.querySelector(".panel").scrollTo({ top: 0, behavior: "smooth" });
+  });
 
   deal();
 })();
