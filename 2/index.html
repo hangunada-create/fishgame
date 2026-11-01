@@ -105,6 +105,11 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
 .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .go.sub{background:#fff;color:#1e88e5;box-shadow:inset 0 0 0 2px #3da9fc}
 .go.sub:hover{background:#eef7ff}
+.go.brag{background:#ff7a59;width:100%;max-width:260px;box-shadow:0 4px 0 #d9532f}
+.go.brag:hover{background:#f2643f}
+.go.brag:active{transform:translateY(2px);box-shadow:0 2px 0 #d9532f}
+#shareMsg{margin:0;font-size:14px;color:#d9532f;min-height:1.4em}
+#shareBox{width:100%;font:inherit;font-size:14px;line-height:1.5;padding:8px;border:1px solid #d6e3ee;border-radius:10px;color:#1d3557;background:#f5f9fc;resize:none}
 #fishList{width:100%;display:flex;flex-direction:column;gap:8px;padding-top:12px;margin-top:4px;border-top:1px dashed #d6e3ee}
 #fishList h3{font-family:var(--display);font-weight:400;font-size:18px;margin:0}
 #fishList .hint{margin:0;font-size:13px;color:#5b6b80}
@@ -148,6 +153,9 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
     <p class="result" id="result"></p>
     <span class="badge" id="genius" hidden>60초 안에 성공 · 기억력 천재</span>
     <p class="msg" id="msg"></p>
+    <button class="go brag" id="brag" type="button">기록 자랑하기</button>
+    <p id="shareMsg" aria-live="polite"></p>
+    <textarea id="shareBox" rows="6" readonly hidden aria-label="자랑 문구"></textarea>
     <div class="btns">
       <button class="go" id="restart" type="button">한 판 더</button>
       <button class="go sub" id="showFish" type="button" aria-expanded="false" aria-controls="fishList">생선 확인</button>
@@ -195,6 +203,7 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
     document.querySelectorAll(".slot").forEach(s => { s.classList.remove("got"); s.querySelector("b").textContent = "?"; });
     $("last").textContent = "";
     $("clear").hidden = true;
+    $("shareMsg").textContent = ""; $("shareBox").hidden = true;
     $("fishList").hidden = true; $("showFish").textContent = "생선 확인"; $("showFish").setAttribute("aria-expanded", "false");
     const board = $("board"); board.innerHTML = "";
     const cards = [];
@@ -255,7 +264,7 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
     else msg = "최고 기록은 " + prev + "초. 지난번의 나에게 조금씩 다가가는 중이에요.";
     $("msg").textContent = msg;
     if (prev == null || time < prev) setBest(time);
-    setTimeout(() => { $("clear").hidden = false; $("restart").focus(); }, 500);
+    setTimeout(() => { $("clear").hidden = false; $("brag").focus(); }, 500);
   }
 
   $("music").addEventListener("click", () => {
@@ -266,6 +275,41 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
   const again = () => { if (musicOn && started) play(S.bgm); deal(); };
   $("again").addEventListener("click", again);
   $("restart").addEventListener("click", again);
+
+  // 기록 자랑하기
+  const GAME_URL = "https://hangunada-create.github.io/fishgame/2/";
+  function bragText(){
+    const lines = ["🐟 반반 생선 짝맞추기", "갈라진 생선 12마리를 " + time + "초 만에 이었어요! (뒤집기 " + flips + "번)"];
+    if (time <= 60) lines.push("🏅 기억력 천재 인증");
+    lines.push("나보다 빨리 이을 수 있어?", "👉 " + GAME_URL);
+    return lines.join("\n");
+  }
+  function copyOld(text){
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch(e){}
+    ta.remove(); return ok;
+  }
+  function showManual(text){
+    const box = $("shareBox"); box.value = text; box.hidden = false; box.focus(); box.select();
+    $("shareMsg").textContent = "아래 문구를 길게 눌러 복사해 주세요.";
+  }
+  $("brag").addEventListener("click", async () => {
+    const text = bragText();
+    const touch = window.matchMedia && matchMedia("(pointer:coarse)").matches;
+    if (touch && navigator.share) {
+      try { await navigator.share({ text: text }); $("shareMsg").textContent = "자랑 완료! 친구 기록도 궁금하네요."; return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      $("shareMsg").textContent = "복사했어요. 카톡방에 붙여 넣어 보세요!";
+    } catch (e) {
+      if (copyOld(text)) $("shareMsg").textContent = "복사했어요. 카톡방에 붙여 넣어 보세요!";
+      else showManual(text);
+    }
+  });
 
   // 생선 확인 목록
   const list = $("fishList");
