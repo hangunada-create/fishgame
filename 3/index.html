@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>회접시 짝맞추기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="이 회는 어떤 생선일까? 생선 12마리와 회접시 12개의 짝을 맞춰 보세요. 이상한생선가게 기억 게임 3탄">
+<meta property="og:type" content="website">
+<meta property="og:title" content="회접시 짝맞추기 · 이상한생선가게 기억 게임 3탄">
+<meta property="og:description" content="이 회는 어떤 생선일까? 생선과 회접시의 짝을 맞춰 보세요. 90초 안에 성공하면 회 박사!">
+<meta property="og:image" content="https://hangunada-create.github.io/fishgame/3/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://hangunada-create.github.io/fishgame/3/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* 레이아웃: 위에 기록판, 가운데 생선 12장+회접시 12장 카드 판, 아래에 '맞힌 회접시' 줄. 2탄의 색을 그대로 이어받음 */
+:root{
+  --sea:#f2f6f9;        /* 바탕 (1탄 배경) */
+  --ink:#1d3557;        /* 글자 */
+  --muted:#5b6b80;
+  --wave:#3da9fc;       /* 1탄 버튼 파랑 */
+  --wave-deep:#1e88e5;
+  --card:#ffffff;
+  --line:#d6e3ee;
+  --coral:#ff7a59;      /* 짝 맞춤 표시 */
+  --shadow:rgba(29,53,87,.14);
+  --display:"Jua","Gowun Dodum",system-ui,sans-serif;
+  --body:"Gowun Dodum",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --sea:#0e1a26;--ink:#e6eef6;--muted:#9fb2c6;--wave:#4fb3ff;--wave-deep:#7cc6ff;
+  --card:#f7fafc;--line:#25384a;--coral:#ff8f72;--shadow:rgba(0,0,0,.45);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --sea:#0e1a26;--ink:#e6eef6;--muted:#9fb2c6;--wave:#4fb3ff;--wave-deep:#7cc6ff;
+  --card:#f7fafc;--line:#25384a;--coral:#ff8f72;--shadow:rgba(0,0,0,.45);color-scheme:dark}
+
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0;background:var(--sea);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 32px}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+
+header{text-align:center;display:flex;flex-direction:column;gap:4px}
+.eyebrow{font-family:var(--display);color:var(--wave);letter-spacing:.08em;font-size:14px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,7vw,40px);margin:0;line-height:1.15;text-wrap:balance}
+.sub{color:var(--muted);margin:0;text-wrap:balance}
+
+.hud{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
+.stat{display:flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:999px;background:var(--card);color:#1d3557;box-shadow:0 2px 6px var(--shadow)}
+.stat b{font-family:var(--display);font-weight:400;font-size:20px;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:#5b6b80}
+.ctl{font:inherit;font-size:13px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.ctl:hover{border-color:var(--wave)}
+button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
+
+#board{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+@media (max-width:600px){#board{grid-template-columns:repeat(4,1fr);gap:8px}}
+.card{aspect-ratio:4/3;max-width:100%;perspective:900px;border:0;padding:0;background:none;cursor:pointer}
+.inner{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.card.flipped .inner,.card.matched .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;overflow:hidden;background:var(--card);box-shadow:0 4px 10px var(--shadow)}
+.back img{width:100%;height:100%;object-fit:cover}
+.front{transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.front.F img{width:92%;height:66%;object-fit:contain;mix-blend-mode:multiply}
+.front.F b{font-family:var(--display);font-weight:400;font-size:clamp(12px,2.6vw,16px);color:#1d3557;line-height:1.1;margin-top:2px}
+.front.P{background:#1f2a36}
+.front.P img{width:100%;height:100%;object-fit:cover}
+.front.P .tag{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);white-space:nowrap;font-family:var(--display);font-size:clamp(11px,2.4vw,15px);
+  background:#fff;color:#d9532f;border-radius:999px;padding:2px 10px;box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:opacity .2s}
+.card.reveal .front.P .tag,.card.matched .front.P .tag{opacity:1}
+.card.matched .front.P .tag{color:#1d3557}
+.card.matched .face{box-shadow:0 0 0 3px var(--coral),0 4px 10px var(--shadow)}
+.card.matched{cursor:default}
+.card.matched .front{animation:pop .4s ease}
+.card.wrong .front{animation:shake .35s}
+@keyframes pop{50%{transform:rotateY(180deg) scale(1.08)}}
+@keyframes shake{25%{transform:rotateY(180deg) translateX(-4px)}75%{transform:rotateY(180deg) translateX(4px)}}
+
+.dex{display:flex;flex-direction:column;gap:6px}
+.dex h2{font-family:var(--display);font-weight:400;font-size:17px;margin:0;display:flex;justify-content:space-between}
+#last{color:var(--coral);font-size:15px}
+.dex h2 small{font-family:var(--body);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+#dex{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:8px;border-radius:12px;border:1px dashed var(--line)}
+@media (max-width:600px){#dex{grid-template-columns:repeat(4,1fr)}}
+.slot{max-width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--card);border-radius:8px;padding:4px 2px}
+.slot .pic{aspect-ratio:4/3;overflow:hidden;border-radius:6px;width:100%;display:flex;align-items:center;justify-content:center}
+.slot b{font-family:var(--display);font-weight:400;font-size:12px;color:#9aa9b8;line-height:1.2}
+.slot.got b{color:#1d3557}
+.slot .pic{background:repeating-linear-gradient(45deg,#eef4f9 0 6px,#f7fafc 6px 12px)}
+.slot img{width:100%;height:100%;object-fit:cover;filter:grayscale(1);opacity:0;transition:filter .5s,opacity .5s,transform .5s}
+.slot.got img{filter:none;opacity:1;animation:swim .6s ease}
+@keyframes swim{0%{transform:translateY(6px) scale(.6)}60%{transform:translateY(-3px) scale(1.15)}100%{transform:none}}
+
+#clear{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(14,26,38,.55);
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:20}
+.panel{background:#ffffff;color:#1d3557;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;max-height:100%;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
+.panel .cat{flex-shrink:0;width:140px;border-radius:14px;animation:dance .6s infinite alternate}
+.panel h2{font-family:var(--display);font-weight:400;font-size:28px;margin:0}
+.panel .result{font-variant-numeric:tabular-nums;color:#5b6b80;margin:0}
+.panel .msg{margin:0;font-size:16px}
+.badge{font-family:var(--display);background:#fff1ec;color:#d9532f;border-radius:999px;padding:3px 12px}
+.go{font-family:var(--display);font-size:19px;border:0;border-radius:12px;padding:10px 24px;background:#3da9fc;color:#fff;cursor:pointer}
+.go:hover{background:#1e88e5}
+.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.go.sub{background:#fff;color:#1e88e5;box-shadow:inset 0 0 0 2px #3da9fc}
+.go.sub:hover{background:#eef7ff}
+.go.brag{background:#ff7a59;width:100%;max-width:260px;box-shadow:0 4px 0 #d9532f}
+.go.brag:hover{background:#f2643f}
+.go.brag:active{transform:translateY(2px);box-shadow:0 2px 0 #d9532f}
+#shareMsg{margin:0;font-size:14px;color:#d9532f;min-height:1.4em}
+#shareBox{width:100%;font:inherit;font-size:14px;line-height:1.5;padding:8px;border:1px solid #d6e3ee;border-radius:10px;color:#1d3557;background:#f5f9fc;resize:none}
+#fishList{width:100%;display:flex;flex-direction:column;gap:8px;padding-top:12px;margin-top:4px;border-top:1px dashed #d6e3ee}
+#fishList h3{font-family:var(--display);font-weight:400;font-size:18px;margin:0}
+#fishList .hint{margin:0;font-size:13px;color:#5b6b80}
+.fish{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px;border-radius:12px;background:#f5f9fc}
+.fish .pair{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;width:100%}
+.fish .pair img{width:100%;height:auto;min-width:0}
+.fish .pair .fi{mix-blend-mode:multiply}
+.fish .pair .pl{border-radius:8px}
+.fish .pair i{font-style:normal;font-family:var(--display);color:#ff7a59;font-size:20px}
+.fish b{font-family:var(--display);font-weight:400;font-size:18px;color:#1d3557}
+.fish small{color:#9aa9b8;font-variant-numeric:tabular-nums}
+.shop{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:#fff1ec;color:#1d3557;text-decoration:none;text-align:left;box-shadow:inset 0 0 0 2px #ffcbb9}
+.shop:hover{background:#ffe5db}
+.shop:focus-visible{outline:3px solid #3da9fc;outline-offset:2px}
+.shop span{flex:1;min-width:0;font-size:15px;line-height:1.45}
+.shop strong{display:block;font-family:var(--display);font-weight:400;font-size:19px;color:#d9532f}
+.shop i{font-style:normal;font-family:var(--display);font-size:22px;color:#d9532f}
+@keyframes dance{from{transform:rotate(-8deg)}to{transform:rotate(8deg) scale(1.06)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">이상한생선가게 기억 게임 3탄</div>
+    <h1>회접시 짝맞추기</h1>
+    <p class="sub">이 회는 어떤 생선일까요? 생선 카드와 회접시 카드를 짝지어 주세요. 틀리면 그 회가 무슨 생선인지 살짝 알려 줄게요.</p>
+  </header>
+
+  <div class="hud">
+    <div class="stat"><span>시간</span><b id="time">0</b><span>초</span></div>
+    <div class="stat"><span>뒤집기</span><b id="flips">0</b><span>번</span></div>
+    <div class="stat"><span>최고</span><b id="best">–</b><span>초</span></div>
+    <button class="ctl" id="music" type="button">🎵 음악 끄기</button>
+    <button class="ctl" id="again" type="button">새 판</button>
+  </div>
+
+  <div id="board" aria-label="카드 판"></div>
+
+  <section class="dex">
+    <h2><span>맞힌 회접시 <span id="last" aria-live="polite"></span></span> <small id="count">0 / 12</small></h2>
+    <div id="dex"></div>
+  </section>
+</div>
+
+<div id="clear" hidden>
+  <div class="panel" role="dialog" aria-labelledby="clearTitle">
+    <img class="cat" src="images/cat216.webp" alt="엄지를 든 216고양이">
+    <h2 id="clearTitle">회접시 12개 완성!</h2>
+    <p class="result" id="result"></p>
+    <span class="badge" id="genius" hidden>90초 안에 성공 · 회 박사</span>
+    <p class="msg" id="msg"></p>
+    <button class="go brag" id="brag" type="button">기록 자랑하기</button>
+    <p id="shareMsg" aria-live="polite"></p>
+    <textarea id="shareBox" rows="6" readonly hidden aria-label="자랑 문구"></textarea>
+    <div class="btns">
+      <button class="go" id="restart" type="button">한 판 더</button>
+      <button class="go sub" id="showFish" type="button" aria-expanded="false" aria-controls="fishList">정답 보기</button>
+    </div>
+    <div id="fishList" hidden>
+      <h3>생선과 회접시 12쌍</h3>
+      <p class="hint">위아래로 움직여서 한 마리씩 보세요.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const NAMES = ["광어","민어","밴댕이","병어","삼치","숭어","아나고","웅어","전어","준치","참돔","홍어"];
+  const N = NAMES.length;
+  const $ = id => document.getElementById(id);
+  const snd = n => { const a = new Audio("sound/" + n + ".mp3"); a.preload = "auto"; return a; };
+  const S = { bgm: snd("bgm"), flip: snd("flip"), match: snd("match"), fail: snd("fail"), clear: snd("clear") };
+  S.bgm.loop = true; S.bgm.volume = .3; S.flip.volume = .6; S.match.volume = .8; S.fail.volume = .6; S.clear.volume = .8;
+  let musicOn = true, started = false;
+  const play = a => { try { a.currentTime = 0; const p = a.play(); if (p) p.catch(()=>{}); } catch(e){} };
+
+  const KEY = "ieum-plate-best";
+  const getBest = () => { try { const v = parseInt(localStorage.getItem(KEY), 10); return isNaN(v) ? null : v; } catch(e){ return null; } };
+  const setBest = v => { try { localStorage.setItem(KEY, String(v)); } catch(e){} };
+
+  let first = null, lock = false, matched = 0, flips = 0, time = 0, timer = null;
+
+  // 도감 줄
+  const dex = $("dex");
+  for (let i = 1; i <= N; i++) {
+    const s = document.createElement("div");
+    s.className = "slot"; s.id = "slot" + i;
+    s.innerHTML = '<div class="pic"><img src="images/plate/p' + i + '.webp" alt=""></div><b>?</b>';
+    dex.appendChild(s);
+  }
+
+  function shuffle(a){ for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  function deal(){
+    clearInterval(timer); timer = null;
+    first = null; lock = false; matched = 0; flips = 0; time = 0;
+    $("time").textContent = 0; $("flips").textContent = 0; $("count").textContent = "0 / " + N;
+    const b = getBest(); $("best").textContent = b == null ? "–" : b;
+    document.querySelectorAll(".slot").forEach(s => { s.classList.remove("got"); s.querySelector("b").textContent = "?"; });
+    $("last").textContent = "";
+    $("clear").hidden = true;
+    $("shareMsg").textContent = ""; $("shareBox").hidden = true;
+    $("fishList").hidden = true; $("showFish").textContent = "정답 보기"; $("showFish").setAttribute("aria-expanded", "false");
+    const board = $("board"); board.innerHTML = "";
+    const cards = [];
+    for (let i = 1; i <= N; i++) { cards.push({ fish: i, side: "F" }, { fish: i, side: "P" }); }
+    shuffle(cards).forEach(c => {
+      const el = document.createElement("button");
+      el.type = "button"; el.className = "card";
+      el.setAttribute("aria-label", "뒤집힌 카드");
+      el.innerHTML = '<div class="inner"><div class="face back"><img src="images/back.webp" alt=""></div>' +
+        (c.side === "F"
+          ? '<div class="face front F"><img src="images/fish/f' + c.fish + '.webp" alt=""><b>' + NAMES[c.fish - 1] + '</b></div></div>'
+          : '<div class="face front P"><img src="images/plate/p' + c.fish + '.webp" alt=""><span class="tag">' + NAMES[c.fish - 1] + '회</span></div></div>');
+      el.addEventListener("click", () => flip(el, c));
+      board.appendChild(el);
+    });
+  }
+
+  function startClock(){
+    if (timer) return;
+    timer = setInterval(() => { time++; $("time").textContent = time; }, 1000);
+  }
+
+  function flip(el, c){
+    if (lock || el.classList.contains("flipped") || el.classList.contains("matched")) return;
+    if (!started) { started = true; if (musicOn) play(S.bgm); }
+    startClock();
+    el.classList.add("flipped");
+    el.setAttribute("aria-label", c.side === "F" ? NAMES[c.fish - 1] + " 생선" : "회접시");
+    flips++; $("flips").textContent = flips;
+    play(S.flip);
+    if (!first) { first = { el, c }; return; }
+    const a = first; first = null;
+    if (a.c.fish === c.fish && a.c.side !== c.side) {
+      [a.el, el].forEach(x => { x.classList.remove("flipped"); x.classList.add("matched"); });
+      play(S.match);
+      matched++; $("count").textContent = matched + " / " + N;
+      const slot = $("slot" + c.fish); slot.classList.add("got"); slot.querySelector("b").textContent = NAMES[c.fish - 1] + "회";
+      $("last").textContent = "· " + NAMES[c.fish - 1] + "회 정답!";
+      if (matched === N) finish();
+    } else {
+      lock = true; play(S.fail);
+      [a.el, el].forEach(x => x.classList.add("wrong"));
+      // 틀리면 회접시가 무슨 생선인지 살짝 보여 줌
+      const plates = [[a.el, a.c], [el, c]].filter(p => p[1].side === "P");
+      plates.forEach(p => p[0].classList.add("reveal"));
+      setTimeout(() => {
+        [a.el, el].forEach(x => { x.classList.remove("flipped", "wrong", "reveal"); x.setAttribute("aria-label", "뒤집힌 카드"); });
+        lock = false;
+      }, plates.length ? 1500 : 900);
+    }
+  }
+
+  function finish(){
+    clearInterval(timer); timer = null;
+    S.bgm.pause(); play(S.clear);
+    const prev = getBest();
+    $("result").textContent = time + "초 · 뒤집기 " + flips + "번";
+    $("genius").hidden = time > 90;
+    let msg;
+    if (prev == null) msg = "첫 기록이에요. 다음 판은 이 기록과 겨뤄 봐요.";
+    else if (time < prev) msg = "지난 최고 기록보다 " + (prev - time) + "초 빨라졌어요!";
+    else if (time === prev) msg = "최고 기록과 똑같아요. 한 끗 차이!";
+    else msg = "최고 기록은 " + prev + "초. 지난번의 나에게 조금씩 다가가는 중이에요.";
+    $("msg").textContent = msg;
+    if (prev == null || time < prev) setBest(time);
+    setTimeout(() => { $("clear").hidden = false; $("brag").focus(); }, 500);
+  }
+
+  $("music").addEventListener("click", () => {
+    musicOn = !musicOn;
+    $("music").textContent = musicOn ? "🎵 음악 끄기" : "🎵 음악 켜기";
+    if (musicOn && started && matched < N) play(S.bgm); else S.bgm.pause();
+  });
+  const again = () => { if (musicOn && started) play(S.bgm); deal(); };
+  $("again").addEventListener("click", again);
+  $("restart").addEventListener("click", again);
+
+  // 기록 자랑하기
+  const GAME_URL = "https://hangunada-create.github.io/fishgame/3/";
+  function bragText(){
+    const lines = ["🐟 회접시 짝맞추기", "회접시 12개가 무슨 생선인지 " + time + "초 만에 다 맞혔어요! (뒤집기 " + flips + "번)"];
+    if (time <= 90) lines.push("🏅 회 박사 인증");
+    lines.push("회만 보고 생선 알아볼 수 있어?", "👉 " + GAME_URL);
+    return lines.join("\n");
+  }
+  function copyOld(text){
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch(e){}
+    ta.remove(); return ok;
+  }
+  function showManual(text){
+    const box = $("shareBox"); box.value = text; box.hidden = false; box.focus(); box.select();
+    $("shareMsg").textContent = "아래 문구를 길게 눌러 복사해 주세요.";
+  }
+  $("brag").addEventListener("click", async () => {
+    const text = bragText();
+    const touch = window.matchMedia && matchMedia("(pointer:coarse)").matches;
+    if (touch && navigator.share) {
+      try { await navigator.share({ text: text }); $("shareMsg").textContent = "자랑 완료! 친구 기록도 궁금하네요."; return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      $("shareMsg").textContent = "복사했어요. 카톡방에 붙여 넣어 보세요!";
+    } catch (e) {
+      if (copyOld(text)) $("shareMsg").textContent = "복사했어요. 카톡방에 붙여 넣어 보세요!";
+      else showManual(text);
+    }
+  });
+
+  // 생선 확인 목록
+  const list = $("fishList");
+  const SHOP_URL = "https://ieumfish.co.kr";
+  const SHOP = {
+    3: ["이 회접시, 진짜 우리 가게 접시예요", "목포 자유시장 이음수산에서 오늘도 이렇게 떠서 보내요. 가게 구경하기"],
+    6: ["오후 3시 전에 주문하면 다음 날 도착", "갓 뜬 회를 전국으로 보내요. 오늘 들어온 생선 보러 가기"],
+    9: ["이상한 생선가게 이음수산", "바다와 문화와 이야기를 공부하는 생선가게예요. make life yummy · ieumfish.co.kr"]
+  };
+  NAMES.forEach((name, k) => {
+    const d = document.createElement("div");
+    d.className = "fish";
+    d.innerHTML = '<div class="pair"><img class="fi" src="images/fish/f' + (k + 1) + '.webp" alt="' + name + '" loading="lazy"><i aria-hidden="true">→</i><img class="pl" src="images/plate/p' + (k + 1) + '.webp" alt="' + name + '회 접시" loading="lazy"></div><b>' + name + ' · ' + name + '회</b><small>' + (k + 1) + ' / ' + N + '</small>';
+    list.appendChild(d);
+    const ad = SHOP[k + 1];
+    if (ad) {
+      const a = document.createElement("a");
+      a.className = "shop"; a.href = SHOP_URL; a.target = "_blank"; a.rel = "noopener";
+      a.innerHTML = '<span><strong>' + ad[0] + '</strong>' + ad[1] + '</span><i aria-hidden="true">→</i>';
+      list.appendChild(a);
+    }
+  });
+  const again2 = document.createElement("button");
+  again2.type = "button"; again2.className = "go"; again2.textContent = "한 판 더";
+  again2.style.alignSelf = "center";
+  again2.addEventListener("click", again);
+  list.appendChild(again2);
+  $("showFish").addEventListener("click", () => {
+    const open = list.hidden;
+    list.hidden = !open;
+    $("showFish").textContent = open ? "접기" : "정답 보기";
+    $("showFish").setAttribute("aria-expanded", String(open));
+    if (open) list.scrollIntoView({ behavior: "smooth", block: "start" });
+    else document.querySelector(".panel").scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  deal();
+})();
+</script>
+</body>
+</html>
