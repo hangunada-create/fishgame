@@ -117,6 +117,12 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
 .fish img{width:100%;max-width:260px;height:auto;mix-blend-mode:multiply}
 .fish b{font-family:var(--display);font-weight:400;font-size:18px;color:#1d3557}
 .fish small{color:#9aa9b8;font-variant-numeric:tabular-nums}
+.shop{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:#fff1ec;color:#1d3557;text-decoration:none;text-align:left;box-shadow:inset 0 0 0 2px #ffcbb9}
+.shop:hover{background:#ffe5db}
+.shop:focus-visible{outline:3px solid #3da9fc;outline-offset:2px}
+.shop span{flex:1;min-width:0;font-size:15px;line-height:1.45}
+.shop strong{display:block;font-family:var(--display);font-weight:400;font-size:19px;color:#d9532f}
+.shop i{font-style:normal;font-family:var(--display);font-size:22px;color:#d9532f}
 @keyframes dance{from{transform:rotate(-8deg)}to{transform:rotate(8deg) scale(1.06)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -313,11 +319,24 @@ button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
 
   // 생선 확인 목록
   const list = $("fishList");
+  const SHOP_URL = "https://ieumfish.co.kr";
+  const SHOP = {
+    3: ["이 생선들, 진짜로 들어와요", "목포 자유시장 이음수산에 제철마다 들어오는 생선이에요. 가게 구경하기"],
+    6: ["오후 3시 전에 주문하면 다음 날 도착", "갓 뜬 회를 전국으로 보내요. 오늘 들어온 생선 보러 가기"],
+    9: ["이상한 생선가게 이음수산", "바다와 문화와 이야기를 공부하는 생선가게예요. make life yummy · ieumfish.co.kr"]
+  };
   NAMES.forEach((name, k) => {
     const d = document.createElement("div");
     d.className = "fish";
     d.innerHTML = '<img src="images/whole/f' + (k + 1) + '.webp" alt="' + name + '" loading="lazy"><b>' + name + '</b><small>' + (k + 1) + ' / ' + N + '</small>';
     list.appendChild(d);
+    const ad = SHOP[k + 1];
+    if (ad) {
+      const a = document.createElement("a");
+      a.className = "shop"; a.href = SHOP_URL; a.target = "_blank"; a.rel = "noopener";
+      a.innerHTML = '<span><strong>' + ad[0] + '</strong>' + ad[1] + '</span><i aria-hidden="true">→</i>';
+      list.appendChild(a);
+    }
   });
   const again2 = document.createElement("button");
   again2.type = "button"; again2.className = "go"; again2.textContent = "한 판 더";
