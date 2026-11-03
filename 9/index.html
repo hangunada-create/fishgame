@@ -40,7 +40,7 @@ h1{font-family:var(--gasi);font-weight:400;font-size:clamp(34px,10vw,50px);margi
 .hud b{font-family:var(--gasi);font-weight:400;font-size:26px;color:var(--ink);line-height:1}
 .hud .mid{align-items:center}.hud .right{align-items:flex-end}
 .board{position:relative;background:var(--board);border-radius:20px;box-shadow:0 8px 24px var(--shadow);overflow:hidden}
-canvas{display:block;width:100%;height:auto;aspect-ratio:3/4;touch-action:manipulation;user-select:none;-webkit-user-select:none;cursor:pointer}
+canvas{display:block;width:100%;height:auto;aspect-ratio:360/560;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
 .say{text-align:center;margin:0;min-height:1.5em;font-size:15px}
 .say.bad{color:var(--coral)}
 
@@ -79,18 +79,18 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
   <header>
     <div class="eyebrow">이상한생선가게 게임 9탄 · 생선가시체</div>
     <h1>가시 바르기</h1>
-    <p class="sub">이름에 든 자음·모음 가시만, 맨 위부터 쏙!</p>
+    <p class="sub">쌓인 가시를 살살 빼서 생선 이름을 맞춰요</p>
   </header>
 
   <section class="panel" id="intro">
-    <p class="big">이 생선 이름의 가시만,<br>맨 위에서부터 빼세요</p>
-    <p>생선에 자음·모음 가시가 겹겹이 박혀 있어요. 아래 그릇에 흐리게 보이는 이름의 자음·모음만 골라 빼면 돼요. 다른 가시에 눌린 가시를 집거나, 이름에 없는 가시를 집으면 실수예요.</p>
-    <p>생선마다 시간 제한이 있어요. 뒤로 갈수록 가짜 가시는 많아지고 시간은 줄어요. 시간 안에 못 바르면 그 생선은 0점!</p>
+    <p class="big">가시 더미를 무너뜨리지 말고<br>살살 빼서 이름을 맞춰요</p>
+    <p>생선 위에 자음·모음 가시가 와르르 쌓여요. 이름에 든 가시를 잡고 끌어서 아래 그릇의 제자리에 놓으세요. 비뚤게 들어가면 톡 눌러 바로 세워요.</p>
+    <p><b>가시를 5개 떨어뜨리면 그 회는 실패예요</b>(진짜든 가짜든). 세게 잡아당기면 더미가 무너지니 살살! 시간 안에 이름을 다 맞추면 회 한 접시 완성. 가짜 가시는 그릇에 넣어도 도마로 튕겨 나와요. 216고양이가 나타나면 톡 쳐서 쫓아내세요. 안 그러면 도마를 쾅 쳐요!</p>
     <button class="go" id="startBtn" type="button">칼 들기</button>
   </section>
 
   <section class="panel" id="final" hidden>
-    <h2>다섯 마리 손질 끝!</h2>
+    <h2>오늘의 회 접시</h2>
     <div class="total" id="total">0</div>
     <p id="grade"></p>
     <div class="plates" id="plates"></div>
@@ -106,11 +106,11 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
   <div id="play" hidden>
     <div class="hud">
       <span>생선<b id="fn">1 / 5</b></span>
-      <span class="mid">실수<b id="tears">0</b></span>
-      <span class="right">점수<b id="score">0</b></span>
+      <span class="mid">떨어뜨림<b id="tears">0 / 5</b></span>
+      <span class="right">완성<b id="score">0</b></span>
     </div>
     <div class="board">
-      <canvas id="cv" width="720" height="960" aria-label="도마 위 생선과 박힌 자음·모음 가시. 생선 이름에 들어가는 맨 위의 가시를 누르세요."></canvas>
+      <canvas id="cv" width="720" height="1120" aria-label="도마 위 생선에 쌓인 자음·모음 가시. 이름에 든 가시를 끌어서 아래 그릇에 맞춰 넣으세요."></canvas>
       <div class="over" id="doneOv" hidden>
         <div class="done">
           <img id="dImg" src="images/plate/p1.webp" alt="">
@@ -125,6 +125,7 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
   </div>
 </div>
 
+<script src="js/matter.min.js"></script>
 <script>
 (function(){
   const FISH = [
@@ -132,26 +133,16 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
     { n:"삼치", img:5 }, { n:"숭어", img:6 }, { n:"아나고", img:7 }, { n:"웅어", img:8 },
     { n:"전어", img:9 }, { n:"준치", img:10 }, { n:"참돔", img:11 }, { n:"홍어", img:12 }
   ];
-  const ROUNDS = 5, MISS = 15;
-  // 생선이 넘어갈수록: 가짜 가시 ↑, 시간 ↓, 더 빽빽하게
-  const LEVEL = [ { decoy: 6, time: 30, tight: 0 }, { decoy: 8, time: 27, tight: .1 }, { decoy: 10, time: 24, tight: .18 }, { decoy: 12, time: 22, tight: .26 }, { decoy: 14, time: 20, tight: .32 } ];
-  const W = 360, H = 480;                 // 화면(논리) 크기
-  const BODY_Y = 30, BODY_H = 300;        // 도마 위 생선 자리
-  const TRAY_Y = 350, TRAY_H = 110;       // 아래 가시 그릇
-  const FS = 300, CW = 330, CH = 360;     // 한 글자를 그려 자모를 뽑아내는 칸
-  const $ = id => document.getElementById(id);
-  const cv = $("cv"), ctx = cv.getContext("2d"); ctx.setTransform(2, 0, 0, 2, 0, 0);
-  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const FS = 300, CW = 330, CH = 360;
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = a => a[Math.floor(Math.random() * a.length)];
-  const BODYF = "Apple SD Gothic Neo, Malgun Gothic, sans-serif";
-
   const snd = n => { const a = new Audio("sound/" + n + ".mp3"); a.preload = "auto"; return a; };
   const S = { pull: snd("flip"), tear: snd("fail"), done: snd("match"), end: snd("clear") };
   S.pull.volume = .45; S.tear.volume = .55; S.done.volume = .6; S.end.volume = .7;
   let soundOn = true;
   const play = a => { if (!soundOn) return; try { a.currentTime = 0; const p = a.play(); if (p) p.catch(()=>{}); } catch(e){} };
   const fishImg = {}; FISH.forEach(f => { const i = new Image(); i.src = "images/big/f" + f.img + ".jpg"; fishImg[f.img] = i; });
+  const catImg = new Image(); catImg.src = "images/cat216.webp";
 
   // ── 한글 자모 ──
   const CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
@@ -159,15 +150,12 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
   const JONG = " ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ";
   const split = ch => { const c = ch.charCodeAt(0) - 0xAC00; return [Math.floor(c / 588), Math.floor(c % 588 / 28), c % 28]; };
   const join = (c, v, j) => String.fromCharCode(0xAC00 + c * 588 + v * 28 + j);
-  // 헷갈리기 쉬운 짝 (방해 가시 고르기용)
   const LOOK = {
     "ㄱ":"ㅋㄴㄲ","ㄴ":"ㄷㄱ","ㄷ":"ㄹㅌㄴ","ㄹ":"ㄷㅌ","ㅁ":"ㅂㅍㅇ","ㅂ":"ㅁㅍ","ㅅ":"ㅈㅊㅆ","ㅇ":"ㅎㅁ",
     "ㅈ":"ㅊㅅ","ㅊ":"ㅈㅎ","ㅋ":"ㄱㅌ","ㅌ":"ㄷㄹ","ㅍ":"ㅂㅁ","ㅎ":"ㅇㅊ",
     "ㅏ":"ㅓㅑㅐ","ㅓ":"ㅏㅕㅔ","ㅗ":"ㅜㅛ","ㅜ":"ㅗㅠ","ㅡ":"ㅗㅜ","ㅣ":"ㅏㅓ","ㅐ":"ㅔㅏ","ㅔ":"ㅐㅓ",
     "ㅘ":"ㅝㅗ","ㅝ":"ㅘㅜ","ㅕ":"ㅓㅑ","ㅑ":"ㅏㅕ","ㅛ":"ㅗㅠ","ㅠ":"ㅜㅛ"
   };
-
-  // 한 글자를 그린 알파 지도
   const cell = document.createElement("canvas"); cell.width = CW; cell.height = CH;
   const cc = cell.getContext("2d", { willReadFrequently: true });
   function alphaOf(ch){
@@ -181,9 +169,7 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
     const on = new Uint8Array(a.length);
     for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
       if (a[y * CW + x] <= 40) continue;
-      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-        const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < CW && ny < CH) on[ny * CW + nx] = 1;
-      }
+      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < CW && ny < CH) on[ny * CW + nx] = 1; }
     }
     return on;
   }
@@ -192,15 +178,18 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
     for (let i = 0; i < a.length; i++) {
       if (a[i] <= 40 || lab[i] >= 0) continue;
       const id = out.length, px = []; st.push(i); lab[i] = id;
-      while (st.length) {
-        const p = st.pop(); px.push(p); const x = p % CW, y = (p / CW) | 0;
-        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-          const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= CW || ny >= CH) continue;
-          const q = ny * CW + nx; if (a[q] > 40 && lab[q] < 0) { lab[q] = id; st.push(q); }
-        }
-      }
+      while (st.length) { const p = st.pop(); px.push(p); const x = p % CW, y = (p / CW) | 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= CW || ny >= CH) continue; const q = ny * CW + nx; if (a[q] > 40 && lab[q] < 0) { lab[q] = id; st.push(q); } } }
       out.push(px);
     }
+    return out;
+  }
+  function frags(list){
+    const set = new Set(list), seen = new Set(), out = [];
+    for (const s0 of list) { if (seen.has(s0)) continue; const f = [], st = [s0]; seen.add(s0);
+      while (st.length) { const p = st.pop(); f.push(p); const x = p % CW;
+        for (const q of [p - 1, p + 1, p - CW, p + CW, p - CW - 1, p - CW + 1, p + CW - 1, p + CW + 1]) { if (Math.abs(q % CW - x) > 1 || !set.has(q) || seen.has(q)) continue; seen.add(q); st.push(q); } }
+      out.push(f); }
     return out;
   }
   function crop(a, px){
@@ -212,232 +201,348 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
     x.putImageData(id, 0, 0);
     return { c, sx: x0, sy: y0, w, h };
   }
-  function frags(list){
-    const set = new Set(list), seen = new Set(), out = [];
-    for (const s0 of list) {
-      if (seen.has(s0)) continue; const f = [], st = [s0]; seen.add(s0);
-      while (st.length) { const p = st.pop(); f.push(p); const x = p % CW;
-        for (const q of [p - 1, p + 1, p - CW, p + CW, p - CW - 1, p - CW + 1, p + CW - 1, p + CW + 1]) {
-          if (Math.abs(q % CW - x) > 1 || !set.has(q) || seen.has(q)) continue; seen.add(q); st.push(q); } }
-      out.push(f);
-    }
-    return out;
-  }
-  // 글자 하나 → 초성·중성·종성 가시. 다른 초성/종성으로 바꿔 그려도 그대로 남는 획은 그 자리가 아님.
   function jamoOf(ch){
     const [c, v, j] = split(ch), a = alphaOf(ch);
     const altC = [11, 9, 3].filter(k => k !== c).slice(0, 2).map(k => dilate(alphaOf(join(k, v, j)), 2));
     const altJ = j ? [21, 1, 8].filter(k => k !== j).slice(0, 2).map(k => dilate(alphaOf(join(c, v, k)), 4)) : null;
     const g = { cho: [], jung: [], jong: [] };
     const both = (p, alts) => alts.every(m => m[p]);
-    // 덩어리 단위로 가르되, 획이 붙어 한 덩어리면 픽셀 단위로 나눔
     const sortOut = (px, alts, mine, rest) => {
       let n = 0; for (const p of px) n += both(p, alts) ? 1 : 0; const fr = n / px.length;
       if (fr > .85) rest.push(...px); else if (fr < .55) mine.push(...px);
-      else {
-        const A = [], B = []; for (const p of px) (both(p, alts) ? B : A).push(p);
-        // 가장자리 부스러기는 큰 쪽으로
-        for (const [from, to] of [[A, B], [B, A]]) for (const f of frags(from)) if (f.length < 120) { f.forEach(p => { from.splice(from.indexOf(p), 1); to.push(p); }); }
-        mine.push(...A); rest.push(...B);
-      }
+      else { const A = [], B = []; for (const p of px) (both(p, alts) ? B : A).push(p);
+        for (const [from, to] of [[A, B], [B, A]]) for (const f of frags(from)) if (f.length < 120) f.forEach(p => { from.splice(from.indexOf(p), 1); to.push(p); });
+        mine.push(...A); rest.push(...B); }
     };
-    for (const px of comps(a)) {
-      const rest = []; sortOut(px, altC, g.cho, rest);
-      if (!rest.length) continue;
-      if (altJ) sortOut(rest, altJ, g.jong, g.jung); else g.jung.push(...rest);
-    }
+    for (const px of comps(a)) { const rest = []; sortOut(px, altC, g.cho, rest); if (!rest.length) continue; if (altJ) sortOut(rest, altJ, g.jong, g.jung); else g.jung.push(...rest); }
     const out = [];
     if (g.cho.length) out.push({ ...crop(a, g.cho), label: CHO[c], role: "cho" });
     if (g.jung.length) out.push({ ...crop(a, g.jung), label: JUNG[v], role: "jung" });
     if (g.jong.length) out.push({ ...crop(a, g.jong), label: JONG[j], role: "jong" });
     return out;
   }
-  // 방해 가시 하나: 그 자모가 들어간 아무 글자에서 뽑아냄
   function decoyOf(label){
     let ch, role;
     if (CHO.includes(label)) { ch = join(CHO.indexOf(label), pick([0, 8, 20]), 0); role = "cho"; }
     else { ch = join(11, JUNG.indexOf(label), 0); role = "jung"; }
     const p = jamoOf(ch).find(x => x.role === role);
-    return p ? { ...p, label } : null;
+    return p ? { ...p, label, role: "x" } : null;
   }
-
-  // ── 상태 ──
-  let order = [], ri = 0, bones = [], misses = 0, roundMiss = 0, score = 0, state = "intro", fly = [], marks = [], wordBox, results = [], fishRect, t0 = 0, shake = 0, limit = 30;
   function piecesFor(word, nDecoy){
     const real = [];
     [...word].forEach((ch, i) => jamoOf(ch).forEach(p => real.push({ ...p, cell: i })));
     const have = new Set(real.map(p => p.label)), want = [];
-    for (const p of real) {
-      const opts = [...(LOOK[p.label] || "")].filter(l => !have.has(l) && !want.includes(l));
-      if (opts.length) want.push(pick(opts));
-    }
+    for (const p of real) { const o = [...(LOOK[p.label] || "")].filter(l => !have.has(l) && !want.includes(l)); if (o.length) want.push(pick(o)); }
     shuffle(want);
     const fill = [..."ㄱㄴㄷㄹㅁㅂㅅㅈㅊㅎㅋㅌㅍㅏㅓㅗㅜㅣㅐㅔㅑㅕㅛㅠㅡ"].filter(l => !have.has(l) && !want.includes(l));
     while (want.length < nDecoy && fill.length) want.push(fill.splice(Math.floor(Math.random() * fill.length), 1)[0]);
-    // 헷갈리는 짝은 두 번 나올 수도 있음
-    const look = want.filter(l => [...have].some(h => (LOOK[h] || "").includes(l)));
-    while (want.length < nDecoy && look.length) want.push(pick(look));
-    const decoys = want.slice(0, nDecoy).map(decoyOf).filter(Boolean);
-    return { real, decoys };
+    return { real, decoys: want.slice(0, nDecoy).map(decoyOf).filter(Boolean) };
+  }
+  const keyOf = p => p.label + ":" + p.role;
+
+  // ══ 물리 미카도 + 이름 조립 ══
+  const { Engine, Bodies, Body, Composite, Constraint, Query } = Matter;
+  const W = 360, H = 560;
+  const BOARD_Y = 296, BX0 = 34, BX1 = 326;         // 도마 윗면과 양 끝 (끝 밖으로 떨어지면 찢어짐)
+  const FALL_Y = 342;                                 // 이 아래로 떨어지면 '떨어짐'
+  const TRAY_TOP = 352, TRAY_Y = 392, TRAY_H = 120;   // 이름 그릇
+  const $ = id => document.getElementById(id);
+  const cv = $("cv"), ctx = cv.getContext("2d"); ctx.setTransform(2, 0, 0, 2, 0, 0);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const BODYF = "Apple SD Gothic Neo, Malgun Gothic, sans-serif";
+  const ROUNDS = 5, DROP_LIMIT = 5;      // 한 생선에서 가시를 5개 떨어뜨리면 그 회는 실패
+  const LEVEL = [
+    { decoy: 3,  time: 60, cat: 0 },
+    { decoy: 4,  time: 55, cat: 16 },
+    { decoy: 6,  time: 50, cat: 13 },
+    { decoy: 7,  time: 46, cat: 11 },
+    { decoy: 9,  time: 42, cat: 9 }
+  ];
+
+  let still = 0, engine, order = [], ri = 0, bones = [], slots = [], misses = 0, roundMiss = 0, score = 0, state = "intro";
+  let fly = [], marks = [], wordBox, results = [], fishRect, t0 = 0, limit = 60, shake = 0, grab = null, cat = null, catAt = 0, shoos = 0, grace = 0, acc = 0, last = 0;
+
+  // 가시 그림 → 직사각형 조각들로 만든 물리 몸체 (생선가시체가 막대 획이라 잘 맞음)
+  function bodyFor(p, s, x, y){
+    const G = 16, cx = p.c.getContext("2d", { willReadFrequently: true }), d = cx.getImageData(0, 0, p.w, p.h).data;
+    const cols = Math.ceil(p.w / G), rows = Math.ceil(p.h / G), on = [];
+    for (let r = 0; r < rows; r++) { on.push([]); for (let c = 0; c < cols; c++) {
+      let n = 0, t = 0; for (let yy = r * G; yy < Math.min(p.h, r * G + G); yy++) for (let xx = c * G; xx < Math.min(p.w, c * G + G); xx++) { t++; if (d[(yy * p.w + xx) * 4 + 3] > 60) n++; }
+      on[r].push(n / t > .38); } }
+    const rects = [], open = {};
+    for (let r = 0; r <= rows; r++) {
+      const runs = {};
+      if (r < rows) for (let c = 0; c < cols; c++) if (on[r][c]) { let e = c; while (e + 1 < cols && on[r][e + 1]) e++; runs[c + "-" + e] = [c, e]; c = e; }
+      for (const k in open) if (!runs[k]) { rects.push(open[k]); delete open[k]; }
+      for (const k in runs) if (open[k]) open[k].r1 = r; else open[k] = { c0: runs[k][0], c1: runs[k][1], r0: r, r1: r };
+    }
+    if (!rects.length) rects.push({ c0: 0, c1: cols - 1, r0: 0, r1: rows - 1 });
+    const opt = { friction: .7, frictionStatic: 1.1, restitution: 0, density: .0016, frictionAir: .012 };
+    const parts = rects.map(q => {
+      const lx = ((q.c0 + q.c1 + 1) / 2 * G - p.w / 2) * s, ly = ((q.r0 + q.r1 + 1) / 2 * G - p.h / 2) * s;
+      return Bodies.rectangle(x + lx, y + ly, (q.c1 - q.c0 + 1) * G * s, (q.r1 - q.r0 + 1) * G * s, opt);
+    });
+    const body = parts.length > 1 ? Body.create({ parts, ...opt }) : parts[0];
+    return { body, off: { x: x - body.position.x, y: y - body.position.y } };
   }
 
-  // 가시를 생선 몸 위에 흩뿌리고, 서로 덮는 관계를 미리 계산
-  const MW = 180, MH = 160, MS = W / MW;
+  function dropSpot(i){ return { x: rand(W / 2 - 55, W / 2 + 55), y: -40 - (i || 0) * 34 }; }
   function setupRound(){
-    const f = order[ri], im = fishImg[f.img];
-    const fw = W - 24, fh = im.naturalWidth ? Math.min(BODY_H - 20, fw * im.naturalHeight / im.naturalWidth) : 150;
-    const fw2 = im.naturalWidth ? fh * im.naturalWidth / im.naturalHeight : fw;
-    fishRect = { x: (W - fw2) / 2, y: BODY_Y + (BODY_H - fh) / 2, w: fw2, h: fh };
-    const L = LEVEL[ri], { real, decoys } = piecesFor(f.n, L.decoy), n = f.n.length;
-    // 그릇 안 이름 자리
-    const sc = Math.min((W - 70) / (CW * .82 * n), (TRAY_H + 10) / CH);
-    const adv = CW * .82 * sc;
-    wordBox = { sc, ox: W / 2 - adv * n / 2 - (CW - CW * .82) / 2 * sc, adv, oy: TRAY_Y + TRAY_H / 2 - CH * sc / 2 };
-    const BS = .52, cy = fishRect.y + fishRect.h / 2, ry = Math.max(fishRect.h * .42, 80) * (1 - L.tight * .6);
-    const xm = (fishRect.w - 110) * L.tight / 2, x0 = fishRect.x + 50 + xm, x1 = fishRect.x + fishRect.w - 60 - xm;
-    const place = (p, z, isReal) => ({
-      p, z, real: isReal, gone: false,
-      x: rand(x0, x1), y: cy + rand(-ry, ry),
-      rot: rand(-.55, .55), s: BS * rand(.9, 1.1),
-      hx: isReal ? wordBox.ox + (p.cell * adv / sc + p.sx + p.w / 2) * sc : 0,
-      hy: isReal ? wordBox.oy + (p.sy + p.h / 2) * sc : 0
+    const f = order[ri], im = fishImg[f.img], L = LEVEL[ri];
+    engine = Engine.create({ enableSleeping: true }); engine.gravity.y = 1; engine.positionIterations = 8; engine.velocityIterations = 6;
+    const fw = BX1 - BX0 - 20, fh = im.naturalWidth ? Math.min(118, fw * im.naturalHeight / im.naturalWidth) : 90;
+    const fw2 = im.naturalWidth ? Math.min(fw, fh * im.naturalWidth / im.naturalHeight) : fw;
+    fishRect = { x: (W - fw2) / 2, y: BOARD_Y - fh + 4, w: fw2, h: fh };
+    // 도마(정적)와 생선 몸통(둥근 정적 덩어리)
+    Composite.add(engine.world, [
+      Bodies.rectangle((BX0 + BX1) / 2, BOARD_Y + 8, BX1 - BX0, 16, { isStatic: true, friction: .9 }),
+      Bodies.rectangle(W / 2, BOARD_Y - fh * .25, fw2 * .74, fh * .5, { isStatic: true, friction: .9, chamfer: { radius: Math.min(fh * .2, 18) } }),
+      // 도마 양 끝의 낮은 턱 (세게 끌면 넘어감)
+      Bodies.rectangle(BX0 + 4, BOARD_Y - 14, 8, 30, { isStatic: true, friction: .9 }),
+      Bodies.rectangle(BX1 - 4, BOARD_Y - 14, 8, 30, { isStatic: true, friction: .9 })
+    ]);
+    const { real, decoys } = piecesFor(f.n, L.decoy), n = f.n.length;
+    const sc = Math.min((W - 70) / (CW * .82 * n), (TRAY_H + 10) / CH), adv = CW * .82 * sc;
+    wordBox = { sc, adv, ox: W / 2 - adv * n / 2 - (CW - CW * .82) / 2 * sc, oy: TRAY_Y + TRAY_H / 2 - CH * sc / 2 };
+    slots = real.map(p => ({ p, key: keyOf(p), bone: null, locked: false, ang: 0,
+      hx: wordBox.ox + (p.cell * adv / sc + p.sx + p.w / 2) * sc, hy: wordBox.oy + (p.sy + p.h / 2) * sc }));
+    const all = shuffle(real.map(p => ({ p, real: true })).concat(decoys.map(p => ({ p, real: false }))));
+    bones = all.map((o, i) => {
+      const s = .34 * (1 - ri * .03) * rand(.95, 1.05), sp = dropSpot(i), { body, off } = bodyFor(o.p, s, sp.x, sp.y);
+      Body.setAngle(body, rand(-.8, .8));
+      Composite.add(engine.world, body);
+      return { p: o.p, real: o.real, key: keyOf(o.p), s, body, off, state: "pile", z: i };
     });
-    // 방해 가시는 늘 아래층 (진짜 가시를 덮지 않아서 언제나 끝까지 바를 수 있음)
-    const shuffled = shuffle(real.slice());
-    bones = decoys.map((p, i) => place(p, i, false)).concat(shuffled.map((p, i) => place(p, decoys.length + i, true)));
-    const m = document.createElement("canvas"); m.width = MW; m.height = MH; const mc = m.getContext("2d", { willReadFrequently: true });
-    bones.forEach(b => {
-      mc.setTransform(1, 0, 0, 1, 0, 0); mc.clearRect(0, 0, MW, MH);
-      mc.setTransform(1 / MS, 0, 0, 1 / MS, 0, 0); mc.translate(b.x, b.y); mc.rotate(b.rot); mc.scale(b.s, b.s);
-      mc.drawImage(b.p.c, -b.p.w / 2, -b.p.h / 2);
-      const d = mc.getImageData(0, 0, MW, MH).data, mask = new Uint8Array(MW * MH);
-      for (let i = 0; i < mask.length; i++) mask[i] = d[i * 4 + 3] > 60 ? 1 : 0;
-      b.mask = mask; b.under = [];
-    });
-    for (const a of bones) for (const b of bones) {
-      if (b.z <= a.z) continue;
-      let k = 0; for (let i = 0; i < a.mask.length; i++) if (a.mask[i] && b.mask[i]) { k++; if (k > 1) break; }
-      if (k > 1) a.under.push(b);
-    }
-    roundMiss = 0; fly = []; marks = []; t0 = performance.now(); limit = L.time;
-    $("doneOv").hidden = true; say(ri ? "가짜 가시 " + decoys.length + "개 · " + L.time + "초 안에!" : "그릇에 흐린 이름의 자음·모음만, 맨 위부터 쏙!");
-    hud();
+    roundMiss = 0; fly = []; marks = []; grab = null; cat = null; grace = 7; still = 0; acc = 0;
+    t0 = performance.now(); limit = L.time; catAt = L.cat ? rand(L.cat * .6, L.cat) : 1e9;
+    $("doneOv").hidden = true; say("가시가 쏟아져요! 이름에 든 가시를 끌어서 그릇에 맞춰 넣으세요"); hud();
   }
-  const free = b => b.under.every(o => o.gone);
-  const realLeft = () => bones.filter(b => b.real && !b.gone).length;
   function say(t, bad){ $("say").textContent = t; $("say").className = bad ? "say bad" : "say"; }
-  function hud(){ $("fn").textContent = (ri + 1) + " / " + ROUNDS; $("tears").textContent = roundMiss; $("score").textContent = score; }
-
-  function hitBone(px, py){
-    const mx = Math.floor(px / MS), my = Math.floor(py / MS);
-    let best = null;
-    for (const b of bones) {
-      if (b.gone) continue;
-      let hit = false;
-      for (let dy = -2; dy <= 2 && !hit; dy++) for (let dx = -2; dx <= 2 && !hit; dx++) {
-        const x = mx + dx, y = my + dy; if (x < 0 || y < 0 || x >= MW || y >= MH) continue;
-        if (b.mask[y * MW + x]) hit = true;
-      }
-      if (hit && (!best || b.z > best.z)) best = b;
-    }
-    return best;
-  }
-
-  function miss(px, py, b, msg){
+  function hud(){ $("fn").textContent = (ri + 1) + " / " + ROUNDS; $("tears").textContent = roundMiss + " / " + DROP_LIMIT; $("score").textContent = results.filter(r => !r.fail).length; }
+  function warn(msg){ shake = 6; play(S.tear); say(msg, true); }
+  // 가시 하나를 떨어뜨림 → 떨어뜨림 +1, 5개가 되면 그 회는 실패
+  function mistake(x, y, msg){
     misses++; roundMiss++; shake = 10; play(S.tear);
-    marks.push({ x: px, y: py, rot: rand(-1, 1), b, t: 0 });
-    say(msg + " (−" + MISS + "점)", true); hud();
+    marks.push({ x, y: Math.min(y, BOARD_Y + 30), rot: rand(-1, 1), t: 0 });
+    say(msg + " (떨어뜨림 " + roundMiss + " / " + DROP_LIMIT + ")", true); hud();
+    if (roundMiss >= DROP_LIMIT && state === "play") { state = "roundEnd"; setTimeout(() => finishRound("drop"), 600); }
   }
-  function tap(px, py){
-    if (state !== "play") return;
-    const b = hitBone(px, py); if (!b) return;
-    if (!b.real) return miss(px, py, b, "‘" + b.p.label + "’은(는) 이 생선 가시가 아니에요!");
-    if (!free(b)) return miss(px, py, null, "앗, 아래 깔린 가시예요! 살이 찢어졌어요");
-    b.gone = true; play(S.pull); fly.push({ b, t: 0 });
-    const left = realLeft();
-    say(left ? "쏙! ‘" + b.p.label + "’ — 남은 가시 " + left + "개" : "가시를 다 발랐어요!");
-    if (!left) { state = "roundEnd"; setTimeout(finishRound, 750); }
-    hud();
+  function respawn(b){
+    const sp = dropSpot(0);
+    Body.setPosition(b.body, sp); Body.setVelocity(b.body, { x: 0, y: 0 }); Body.setAngularVelocity(b.body, 0); Body.setAngle(b.body, rand(-1.2, 1.2));
+    if (b.state !== "pile") { b.state = "pile"; Composite.add(engine.world, b.body); }
   }
-  cv.addEventListener("pointerdown", e => { const r = cv.getBoundingClientRect(); tap((e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H); e.preventDefault(); });
 
-  function finishRound(timeout){
-    const f = order[ri], sec = Math.min(limit, (performance.now() - t0) / 1000);
-    const pts = timeout ? 0 : Math.max(10, 100 - roundMiss * MISS + Math.round(limit - sec) * 2);
-    score += pts; results.push({ f, pts, miss: roundMiss, sec, fail: !!timeout });
-    play(timeout ? S.tear : S.done);
-    if (timeout) say("시간이 다 됐어요!", true);
+  // ── 그릇에 맞춰 넣기 ──
+  const norm = a => { const t = Math.PI * 2; a = a % t; return a < 0 ? a + t : a; };
+  function tryPlace(b){
+    const pos = b.body.position;
+    if (!b.real) { respawn(b); return warn("‘" + b.p.label + "’은(는) 이 생선 가시가 아니에요! 도마로 돌아가요"); }
+    const cand = slots.filter(s => !s.bone && s.key === b.key).sort((a, c) => Math.hypot(a.hx - pos.x, a.hy - pos.y) - Math.hypot(c.hx - pos.x, c.hy - pos.y));
+    if (!cand.length) { respawn(b); return; }
+    const sl = cand[0];
+    Composite.remove(engine.world, b.body); b.state = "tray"; sl.bone = b;
+    // 몇 번 돌아가 있는지 (0~3 × 90°)
+    let q = Math.round(b.body.angle / (Math.PI / 2)); if (!isFinite(q)) q = 1;
+    sl.q = ((q % 4) + 4) % 4; sl.ang = sl.q * Math.PI / 2;
+    fly.push({ sl, x0: pos.x, y0: pos.y, r0: b.body.angle, s0: b.s, t: 0 });
+    play(S.pull);
+    if (sl.q === 0) lock(sl); else say("‘" + b.p.label + "’ 들어갔어요! 톡 눌러서 바로 세우세요");
+  }
+  function lock(sl){
+    sl.locked = true; sl.ang = 0; play(S.done);
+    const left = slots.filter(s => !s.locked).length;
+    say(left ? "딱! ‘" + sl.p.label + "’ 맞춤 — 남은 가시 " + left + "개" : "이름 완성!");
+    if (!left) { state = "roundEnd"; cat = null; if (grab) dropGrab(); setTimeout(() => finishRound(false), 800); }
+  }
+  function rotateSlot(sl){
+    sl.q = (sl.q + 1) % 4; sl.ang = sl.q * Math.PI / 2;
+    play(S.pull); if (sl.q === 0) lock(sl);
+  }
+
+  // ── 216고양이: 도마를 쾅! ──
+  function spawnCat(){
+    const side = Math.random() < .5 ? -1 : 1;
+    cat = { x: side < 0 ? -50 : W + 50, sx: side < 0 ? -50 : W + 50, tx: side < 0 ? 52 : W - 52, y: BOARD_Y - 150, t: 0, phase: "in", side };
+    say("216고양이가 도마를 노려요! 톡 쳐서 쫓아내세요", true);
+  }
+  function catAct(){
+    for (const b of bones) if (b.state === "pile") Body.applyForce(b.body, b.body.position, { x: rand(-.012, .012) * b.body.mass, y: -rand(.02, .035) * b.body.mass });
+    shake = 12; grace = 5; still = 0; say("216고양이가 도마를 쾅! 가시가 튀어 올라요", true);
+  }
+  function updateCat(dt){
+    if (!cat) { if (state === "play" && (performance.now() - t0) / 1000 > catAt) spawnCat(); return; }
+    cat.t += dt;
+    if (cat.phase === "in") { const k = Math.min(1, cat.t / .7); cat.x = cat.sx + (cat.tx - cat.sx) * (1 - Math.pow(1 - k, 3)); if (k >= 1) { cat.phase = "warn"; cat.t = 0; } }
+    else if (cat.phase === "warn") { if (cat.t > 1.8) { catAct(); cat.phase = "out"; cat.t = 0; cat.ox = cat.x; } }
+    else { const k = Math.min(1, cat.t / (cat.phase === "flee" ? .45 : .8)); cat.x = cat.ox + ((cat.side < 0 ? -60 : W + 60) - cat.ox) * k * k;
+      if (k >= 1) { cat = null; catAt = (performance.now() - t0) / 1000 + rand(LEVEL[ri].cat * .8, LEVEL[ri].cat * 1.2); } }
+  }
+  function shoo(){
+    if (!cat || (cat.phase !== "in" && cat.phase !== "warn")) return false;
+    cat.phase = "flee"; cat.t = 0; cat.ox = cat.x; shoos++; say("훠이! 216고양이를 쫓았어요"); play(S.pull); return true;
+  }
+
+  // ── 물리 진행 ──
+  const STEP = 1000 / 60;
+  function physics(){
+    Engine.update(engine, STEP);
+    // 쏟아지거나 쾅 친 뒤 더미가 가라앉을 때까지는 세지 않음 (최대 grace 초)
+    if (grace > 0) {
+      grace = Math.max(0, grace - STEP / 1000);
+      const moving = bones.some(b => b.state === "pile" && !(grab && grab.b === b) && (b.body.speed > .35 || b.body.angularSpeed > .02));
+      still = moving ? 0 : still + 1; if (still > 30) grace = 0;
+    }
+    for (const b of bones) {
+      if (b.state !== "pile" || (grab && grab.b === b)) continue;
+      const p = b.body.position;
+      if (p.y > FALL_Y + 18 || p.x < BX0 - 4 || p.x > BX1 + 4) {   // 중심이 도마 밖이면 떨어진 것
+        const fx = Math.max(16, Math.min(W - 16, p.x));
+        // 처음 쏟아질 때와 고양이가 쾅 친 직후는 세지 않음. 진짜든 가짜든 떨어뜨린 가시는 하나하나 셈
+        const pen = !grace && state === "play";
+        if (pen) mistake(fx, BOARD_Y + 24, "‘" + b.p.label + "’ 가시가 도마 밖으로 떨어졌어요!");
+        // 진짜는 다시 위에서 떨어짐. 가짜도 처음 쏟아질 때 흘린 건 다시 얹어 줌
+        if (b.real || (grace > 0 && (b.re = (b.re || 0) + 1) <= 3)) respawn(b);
+        else { Composite.remove(engine.world, b.body); b.state = "gone"; }
+      }
+    }
+  }
+
+  // ── 입력: 끌어서 빼고, 그릇에 놓고, 톡 눌러 돌리기 ──
+  const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
+  function pickBody(x, y){
+    const pile = bones.filter(b => b.state === "pile");
+    for (const r of [0, 6, 11]) for (let k = 0; k < (r ? 8 : 1); k++) {
+      const px = x + Math.cos(k * Math.PI / 4) * r, py = y + Math.sin(k * Math.PI / 4) * r;
+      const hit = Query.point(pile.map(b => b.body), { x: px, y: py });
+      if (hit.length) { const ids = new Set(hit.map(h => h.id)); const c = pile.filter(b => ids.has(b.body.id)); return c[c.length - 1]; }
+    }
+    return null;
+  }
+  function dropGrab(){ Composite.remove(engine.world, grab.c); const g = grab; grab = null; return g; }
+  cv.addEventListener("pointerdown", e => {
+    e.preventDefault(); if (state !== "play") return;
+    const [x, y] = pos(e);
+    if (cat && Math.hypot(x - cat.x, y - cat.y) < 42 && shoo()) return;
+    for (const sl of slots) if (sl.bone && !sl.locked && Math.hypot(x - sl.hx, y - sl.hy) < 30) { rotateSlot(sl); return; }
+    const b = pickBody(x, y); if (!b) return;
+    const c = Constraint.create({ pointA: { x, y }, bodyB: b.body, pointB: { x: x - b.body.position.x, y: y - b.body.position.y }, stiffness: .05, damping: .08, length: 0 });
+    Composite.add(engine.world, c); grab = { b, c };
+    b.body.frictionAir = .06;
+    try { cv.setPointerCapture(e.pointerId); } catch(_){}
+  });
+  cv.addEventListener("pointermove", e => { if (!grab) return; const [x, y] = pos(e); grab.c.pointA = { x, y: Math.min(y, H - 10) }; });
+  const release = () => {
+    if (!grab) return;
+    const { b } = dropGrab(); b.body.frictionAir = .012;
+    if (state === "play" && b.body.position.y > TRAY_TOP) tryPlace(b);
+  };
+  cv.addEventListener("pointerup", release); cv.addEventListener("pointercancel", release);
+
+  // why: false = 완성, "time" = 시간 초과, "drop" = 5개 떨어뜨림
+  function finishRound(why){
+    const timeout = why === true ? "time" : why;
+    const f = order[ri], sec = Math.min(limit, (performance.now() - t0) / 1000), fail = !!timeout;
+    results.push({ f, drops: roundMiss, sec, fail, why: timeout });
+    play(fail ? S.tear : S.done);
+    if (timeout === "time") say("시간이 다 됐어요!", true);
+    if (timeout === "drop") say("가시를 " + DROP_LIMIT + "개나 떨어뜨렸어요. 이번 회는 실패!", true);
+    cat = null; if (grab) dropGrab();
     $("dImg").src = "images/plate/p" + f.img + ".webp"; $("dImg").alt = f.n + "회 한 접시";
-    $("dImg").classList.toggle("fail", !!timeout);
-    $("dName").textContent = timeout ? "시간 초과!" : f.n + "회 완성";
-    $("dPt").textContent = timeout ? f.n + " 가시가 " + realLeft() + "개 남았어요 · 0점" : "+" + pts + "점 · 실수 " + roundMiss + "번 · " + Math.round(sec) + "초";
+    $("dImg").classList.toggle("fail", fail);
+    $("dName").textContent = !fail ? f.n + "회 완성!" : timeout === "time" ? "시간 초과!" : f.n + "회 실패";
+    $("dPt").textContent = !fail ? "떨어뜨림 " + roundMiss + "개 · " + Math.round(sec) + "초" : timeout === "time" ? f.n + " 가시가 " + slots.filter(s => !s.locked).length + "개 남았어요" : "가시를 " + DROP_LIMIT + "개 떨어뜨렸어요";
     $("nextBtn").textContent = ri < ROUNDS - 1 ? "다음 생선" : "결과 보기";
     $("doneOv").hidden = false; $("nextBtn").focus(); hud();
   }
   function next(){ ri++; if (ri < ROUNDS) { state = "play"; setupRound(); } else finish(); }
 
-  const BOARD = "#f2e6cf", GRAIN = "rgba(150,110,60,.13)", BONE = "#2b2724";
-  function draw(){
-    const coral = css("--coral"), line = css("--line"), muted = css("--muted"), board = css("--board"), ink = css("--ink");
-    ctx.save(); ctx.clearRect(0, 0, W, H);
-    if (shake > 0) { ctx.translate(rand(-shake, shake) * .35, 0); shake -= 1; }
-    // 도마 (밝은 나무, 화면 모드와 상관없이)
-    ctx.fillStyle = BOARD; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(8, BODY_Y - 12, W - 16, BODY_H + 24, 18) : ctx.rect(8, BODY_Y - 12, W - 16, BODY_H + 24); ctx.fill();
-    ctx.strokeStyle = GRAIN; ctx.lineWidth = 1;
-    for (let y = BODY_Y; y < BODY_Y + BODY_H; y += 14) { ctx.beginPath(); ctx.moveTo(20, y + Math.sin(y) * 2); ctx.lineTo(W - 20, y + Math.cos(y) * 2); ctx.stroke(); }
-    if (state === "play" || state === "roundEnd") {
-      const f = order[ri], im = fishImg[f.img];
-      // 남은 시간 막대 (도마 윗변)
+  // ── 그리기 ──
+  const BONE = "#2b2724";
+  function drawPiece(p, color, x, y, ang, s, off){
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang); if (off) ctx.translate(off.x, off.y); ctx.scale(s, s);
+    ctx.drawImage(tinted(p, color), -p.w / 2, -p.h / 2); ctx.restore();
+  }
+  function loop(t){
+    const dt = Math.min(.05, (t - (last || t)) / 1000); last = t;
+    if (engine && (state === "play" || state === "roundEnd")) { acc += dt * 1000; let n = 0; while (acc >= STEP && n < 4) { physics(); acc -= STEP; n++; } if (n >= 4) acc = 0; }
+    if (state === "play") updateCat(dt);
+    draw(t, dt); requestAnimationFrame(loop);
+  }
+  function draw(t, dt){
+    const coral = css("--coral");
+    ctx.save(); ctx.fillStyle = "#fbf6ec"; ctx.fillRect(0, 0, W, H);
+    if (shake > 0) { ctx.translate(rand(-shake, shake) * .35, rand(-shake, shake) * .2); shake -= 1; }
+    // 떨어지는 바닥
+    ctx.fillStyle = "rgba(200,60,50,.06)"; ctx.fillRect(0, BOARD_Y + 16, W, FALL_Y - BOARD_Y);
+    ctx.fillStyle = "rgba(200,60,50,.45)"; ctx.font = "11px " + BODYF; ctx.textAlign = "center"; ctx.fillText("가시를 " + DROP_LIMIT + "개 떨어뜨리면 그 회는 실패", W / 2, BOARD_Y + 36);
+    // 도마
+    ctx.fillStyle = "#e7d3ae"; ctx.fillRect(BX0, BOARD_Y, BX1 - BX0, 16);
+    ctx.fillStyle = "#cdb68a"; ctx.fillRect(BX0, BOARD_Y + 12, BX1 - BX0, 4);
+    ctx.fillStyle = "#d9c193"; ctx.fillRect(BX0, BOARD_Y - 29, 8, 30); ctx.fillRect(BX1 - 8, BOARD_Y - 29, 8, 30);
+    const live = state === "play" || state === "roundEnd";
+    if (live) {
       const el = (performance.now() - t0) / 1000, rest = Math.max(0, 1 - el / limit);
       if (state === "play" && rest <= 0) { state = "roundEnd"; finishRound(true); }
-      ctx.fillStyle = "rgba(0,0,0,.08)"; ctx.fillRect(24, BODY_Y - 4, W - 48, 5);
-      ctx.fillStyle = rest < .25 ? coral : "#8a7a5c"; ctx.fillRect(24, BODY_Y - 4, (W - 48) * (state === "play" ? rest : 0), 5);
-      if (state === "play") { ctx.fillStyle = rest < .25 ? coral : "#8a7a5c"; ctx.font = "600 12px " + BODYF; ctx.textAlign = "right"; ctx.fillText(Math.ceil(limit - el) + "초", W - 24, BODY_Y + 12); }
-      if (im.complete && im.naturalWidth) {
-        ctx.save(); ctx.globalCompositeOperation = "multiply"; ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(im, fishRect.x, fishRect.y, fishRect.w, fishRect.h); ctx.restore();
-      }
+      ctx.fillStyle = "rgba(0,0,0,.08)"; ctx.fillRect(20, 10, W - 40, 5);
+      ctx.fillStyle = rest < .25 ? coral : "#8a7a5c"; ctx.fillRect(20, 10, (W - 40) * (state === "play" ? rest : 0), 5);
+      if (state === "play") { ctx.font = "600 12px " + BODYF; ctx.textAlign = "right"; ctx.fillText(Math.ceil(limit - el) + "초", W - 20, 30); }
+      const f = order[ri], im = fishImg[f.img];
+      if (im.complete && im.naturalWidth) { ctx.save(); ctx.globalCompositeOperation = "multiply"; ctx.drawImage(im, fishRect.x, fishRect.y, fishRect.w, fishRect.h); ctx.restore(); }
       for (const r of marks) {
-        r.t = Math.min(1, r.t + .02);
-        ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.rot);
-        ctx.strokeStyle = "rgba(200,60,50," + (.8 - r.t * .35) + ")"; ctx.lineWidth = 3; ctx.lineCap = "round";
+        r.t = Math.min(1, r.t + dt * .8);
+        ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.rot); ctx.strokeStyle = "rgba(200,60,50," + (.85 - r.t * .5) + ")"; ctx.lineWidth = 3; ctx.lineCap = "round";
         ctx.beginPath(); ctx.moveTo(-12, -2); ctx.lineTo(-4, 3); ctx.lineTo(3, -3); ctx.lineTo(12, 2); ctx.stroke(); ctx.restore();
       }
-      const fade = state === "roundEnd";
+      // 가시 더미
       for (const b of bones) {
-        if (b.gone) continue;
-        const wrong = marks.some(m => m.b === b && m.t < .6);
-        ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot); ctx.scale(b.s, b.s);
-        if (fade && !b.real) ctx.globalAlpha = .35;
-        ctx.shadowColor = "rgba(255,255,255,.95)"; ctx.shadowBlur = 10;
-        ctx.drawImage(tinted(b.p, wrong ? coral : BONE), -b.p.w / 2, -b.p.h / 2);
-        ctx.shadowColor = "rgba(0,0,0,.28)"; ctx.shadowBlur = 6; ctx.shadowOffsetY = 4;
-        ctx.drawImage(tinted(b.p, wrong ? coral : BONE), -b.p.w / 2, -b.p.h / 2);
-        ctx.restore();
+        if (b.state !== "pile") continue;
+        const held = grab && grab.b === b, p = b.body.position;
+        ctx.save(); ctx.shadowColor = "rgba(255,255,255,.95)"; ctx.shadowBlur = 8;
+        drawPiece(b.p, BONE, p.x, p.y, b.body.angle, b.s, b.off); ctx.restore();
+        ctx.save(); ctx.shadowColor = held ? "rgba(0,0,0,.45)" : "rgba(0,0,0,.25)"; ctx.shadowBlur = held ? 12 : 5; ctx.shadowOffsetY = held ? 8 : 3;
+        drawPiece(b.p, held ? "#3a2f2a" : BONE, p.x, p.y, b.body.angle, b.s, b.off); ctx.restore();
       }
+      if (grab) { const p = grab.c.pointA, q = grab.b.body.position, o = grab.c.pointB; ctx.strokeStyle = "rgba(43,39,36,.35)"; ctx.setLineDash([3, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x + o.x, q.y + o.y); ctx.stroke(); ctx.setLineDash([]); }
     }
-    // 가시 그릇
-    ctx.fillStyle = board; ctx.strokeStyle = line; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.ellipse(W / 2, TRAY_Y + TRAY_H / 2, W / 2 - 16, TRAY_H / 2 + 6, 0, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = muted; ctx.font = "12px " + BODYF; ctx.textAlign = "center"; ctx.fillText("가시 그릇", W / 2, TRAY_Y - 2);
-    if (state === "play" || state === "roundEnd") {
-      const reals = bones.filter(b => b.real);
-      ctx.globalAlpha = .14; for (const b of reals) drawHome(b, ink); ctx.globalAlpha = 1;
-      for (const b of reals) if (b.gone && !fly.find(f => f.b === b)) drawHome(b, ink);
+    // 이름 그릇
+    ctx.fillStyle = "#fffdf8"; ctx.strokeStyle = "#e4dccd"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(W / 2, TRAY_Y + TRAY_H / 2, W / 2 - 14, TRAY_H / 2 + 14, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#8a8178"; ctx.font = "11px " + BODYF; ctx.textAlign = "center"; ctx.fillText("여기 그릇에 가시를 끌어다 놓아요", W / 2, TRAY_Y + TRAY_H + 30);
+    if (live) {
+      const s = wordBox.sc;
+      for (const sl of slots) {
+        const flying = fly.find(f => f.sl === sl);
+        if (!sl.bone) { ctx.globalAlpha = .14; drawPiece(sl.p, BONE, sl.hx, sl.hy, 0, s); ctx.globalAlpha = 1; continue; }
+        if (flying) continue;
+        if (sl.locked) drawPiece(sl.p, BONE, sl.hx, sl.hy, 0, s);
+        else {
+          ctx.globalAlpha = .14; drawPiece(sl.p, BONE, sl.hx, sl.hy, 0, s); ctx.globalAlpha = 1;
+          drawPiece(sl.p, coral, sl.hx, sl.hy, sl.ang, s);
+          ctx.fillStyle = coral; ctx.font = "bold 14px " + BODYF; ctx.textAlign = "center"; ctx.fillText("↻", sl.hx + 16, sl.hy - 14);
+        }
+      }
       for (const f of fly) {
-        f.t = Math.min(1, f.t + .06); const e = 1 - Math.pow(1 - f.t, 3), b = f.b;
-        const x = b.x + (b.hx - b.x) * e, y = b.y + (b.hy - b.y) * e - Math.sin(e * Math.PI) * 60;
-        const s = b.s + (wordBox.sc - b.s) * e, rot = b.rot * (1 - e);
-        ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s); ctx.drawImage(tinted(b.p, f.t >= 1 ? ink : coral), -b.p.w / 2, -b.p.h / 2); ctx.restore();
+        f.t = Math.min(1, f.t + dt * 4); const e = 1 - Math.pow(1 - f.t, 3), sl = f.sl;
+        drawPiece(sl.p, coral, f.x0 + (sl.hx - f.x0) * e, f.y0 + (sl.hy - f.y0) * e, f.r0 + (sl.ang - f.r0) * e, f.s0 + (s - f.s0) * e);
       }
       fly = fly.filter(f => f.t < 1);
     }
+    // 고양이
+    if (cat && live) {
+      const bob = Math.sin(t / 90) * 3;
+      ctx.save(); ctx.translate(cat.x, cat.y + bob);
+      ctx.shadowColor = "rgba(0,0,0,.3)"; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(0, 0, 34, 0, 7); ctx.fill(); ctx.shadowColor = "transparent";
+      ctx.beginPath(); ctx.arc(0, 0, 31, 0, 7); ctx.clip();
+      if (catImg.complete && catImg.naturalWidth) ctx.drawImage(catImg, -76, -58, 120, 120);
+      ctx.restore();
+      if (cat.phase === "warn" || cat.phase === "in") {
+        ctx.fillStyle = coral; ctx.font = "bold 22px " + BODYF; ctx.textAlign = "center"; ctx.fillText("!", cat.x + (cat.side < 0 ? 30 : -30), cat.y - 30);
+        if (cat.phase === "warn") { ctx.strokeStyle = coral; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cat.x, cat.y, 42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - cat.t / 1.8)); ctx.stroke(); }
+      }
+    }
     ctx.restore();
-    requestAnimationFrame(draw);
-  }
-  function drawHome(b, color){
-    const s = wordBox.sc, p = b.p;
-    ctx.drawImage(tinted(p, color), wordBox.ox + (p.cell * wordBox.adv / s + p.sx) * s, wordBox.oy + p.sy * s, p.w * s, p.h * s);
   }
   function tinted(p, color){
     p.tc = p.tc || {}; if (p.tc[color]) return p.tc[color];
@@ -448,16 +553,16 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
 
   function shuffle(a){ for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function start(){
-    order = shuffle(FISH.slice()).slice(0, ROUNDS); ri = 0; score = 0; misses = 0; results = [];
+    order = shuffle(FISH.slice()).slice(0, ROUNDS); ri = 0; misses = 0; shoos = 0; results = [];
     $("intro").hidden = true; $("final").hidden = true; $("play").hidden = false; state = "play";
     setupRound(); $("play").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   function finish(){
     state = "done"; play(S.end);
-    $("total").textContent = score + "점";
-    const fails = results.filter(r => r.fail).length;
-    $("grade").textContent = fails ? "시간 안에 못 바른 생선이 " + fails + "마리. 뒤로 갈수록 가짜 가시가 많아져요!" : misses === 0 ? "실수 하나 없이 다섯 마리! 칼잡이 인정." : misses <= 3 ? "손끝이 야무져요. 이음수산 손질 담당 해도 되겠어요." : "다음엔 이름에 든 자모와 아래 깔린 가시를 더 잘 볼 수 있을 거예요.";
-    $("plates").innerHTML = results.map(r => '<figure><img' + (r.fail ? ' style="filter:grayscale(1);opacity:.4"' : '') + ' src="images/plate/p' + r.f.img + '.webp" alt="' + r.f.n + '회"><figcaption><b>' + r.f.n + (r.fail ? ' ✕' : '회') + '</b>' + (r.fail ? '시간 초과' : r.pts + '점 · 실수 ' + r.miss) + '</figcaption></figure>').join("");
+    const ok = results.filter(r => !r.fail).length;
+    $("total").textContent = ok + " / " + ROUNDS + " 완성";
+    $("grade").textContent = ok === ROUNDS ? (misses === 0 ? "가시 하나 안 떨어뜨리고 다섯 접시! 칼잡이 인정." : "다섯 접시 모두 완성! 216고양이 쫓기 " + shoos + "번.") : ok ? "회 " + ok + "접시 완성. 다음엔 다섯 접시 다 채워 봐요!" : "한 접시도 못 떴어요. 살살 빼는 게 요령이에요!";
+    $("plates").innerHTML = results.map(r => '<figure><img' + (r.fail ? ' style="filter:grayscale(1);opacity:.4"' : '') + ' src="images/plate/p' + r.f.img + '.webp" alt="' + r.f.n + '회"><figcaption><b>' + r.f.n + (r.fail ? ' ✕' : '회') + '</b>' + (r.fail ? (r.why === 'time' ? '시간 초과' : '5개 떨어뜨림') : '떨어뜨림 ' + r.drops) + '</figcaption></figure>').join("");
     $("shareMsg").textContent = ""; $("shareBox").hidden = true;
     $("play").hidden = true; $("final").hidden = false;
   }
@@ -468,7 +573,7 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
 
   const GAME_URL = "https://hangunada-create.github.io/fishgame/9/";
   $("brag").addEventListener("click", async () => {
-    const text = ["🐟 가시 바르기", "생선 다섯 마리 중 " + results.filter(r => !r.fail).length + "마리 가시를 발라 " + score + "점!", "실수 " + misses + "번 · " + results.map(r => r.f.n).join(" "), "너는 실수 없이 바를 수 있어?", "👉 " + GAME_URL].join("\n");
+    const text = ["🐟 가시 바르기", "회 " + results.filter(r => !r.fail).length + " / 5 접시 완성!", "216고양이 쫓기 " + shoos + "번 · " + results.map(r => r.f.n).join(" "), "너는 가시 안 무너뜨리고 뺄 수 있어?", "👉 " + GAME_URL].join("\n");
     const touch = window.matchMedia && matchMedia("(pointer:coarse)").matches;
     if (touch && navigator.share) { try { await navigator.share({ text }); $("shareMsg").textContent = "자랑 완료!"; return; } catch(e){ if (e && e.name === "AbortError") return; } }
     try { await navigator.clipboard.writeText(text); $("shareMsg").textContent = "복사했어요. 카톡방에 붙여 넣어 보세요!"; }
@@ -476,22 +581,22 @@ button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
   });
 
   if (location.hash === "#autotest") window.__k = {
-    info: () => ({ state, ri, score, misses, real: realLeft(), decoys: bones.filter(b => !b.real).length, free: bones.filter(b => b.real && !b.gone && free(b)).length,
-                   labels: bones.map(b => (b.real ? "" : "x") + b.p.label).join(" ") }),
-    // kind: "free" 뺄 수 있는 진짜 / "covered" 깔린 진짜 / "decoy" 방해 가시
-    point: kind => {
-      for (const b of bones.slice().reverse()) {
-        if (b.gone) continue;
-        const ok = kind === "decoy" ? !b.real : b.real && (free(b) === (kind === "free"));
-        if (!ok) continue;
-        for (let i = 0; i < b.mask.length; i++) if (b.mask[i]) { const x = (i % MW) * MS + MS / 2, y = Math.floor(i / MW) * MS + MS / 2; if (hitBone(x, y) === b) return { x, y }; }
-      }
+    info: () => ({ state, ri, ok: results.filter(r => !r.fail).length, drops: roundMiss, misses, pile: bones.filter(b => b.state === "pile").length, gone: bones.filter(b => b.state === "gone").length, slots: slots.map(s => s.locked ? "L" : s.bone ? "r" : "_").join(""), cat: cat ? cat.phase : null }),
+    // 다음에 맞출 칸과, 그 가시를 잡을 점 (몸체 조각 중심)
+    task: () => {
+      const loose = slots.find(s => s.bone && !s.locked); if (loose) return { type: "rotate", x: loose.hx, y: loose.hy };
+      for (const sl of slots) { if (sl.bone) continue;
+        const b = bones.filter(x => x.state === "pile" && x.key === sl.key).sort((a, c) => a.body.position.y - c.body.position.y)[0]; if (!b) continue;
+        const parts = b.body.parts.length > 1 ? b.body.parts.slice(1) : [b.body];
+        for (const pt of parts) { const hit = pickBody(pt.position.x, pt.position.y); if (hit === b) return { type: "drag", x: pt.position.x, y: pt.position.y, tx: sl.hx, ty: sl.hy }; }
+        return { type: "wait" }; }
       return null;
     },
-    jamo: w => [...w].map(ch => jamoOf(ch).map(p => p.role + ":" + p.label + "(" + p.w + "x" + p.h + ")").join(",")).join(" | ")
+    cat: () => cat && (cat.phase === "warn" || cat.phase === "in") ? { x: cat.x, y: cat.y } : null,
+    jump: r => { ri = r; state = "play"; setupRound(); }
   };
 
-  document.fonts.load("300px Gasiche").finally(() => requestAnimationFrame(draw));
+  document.fonts.load("300px Gasiche").finally(() => requestAnimationFrame(loop));
 })();
 </script>
 
