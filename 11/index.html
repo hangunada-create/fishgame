@@ -74,6 +74,9 @@ p{margin:0}
 .dexcard small{font-size:13px;color:var(--muted);line-height:1.4}
 .link{appearance:none;background:none;border:0;color:var(--muted);font-family:var(--f-body);font-size:14px;text-decoration:underline;cursor:pointer;padding:4px;align-self:center}
 @media (min-width:520px){.dexgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.sound{appearance:none;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);font-family:var(--f-mono);font-size:12px;letter-spacing:.04em;border-radius:20px;padding:5px 12px;cursor:pointer}
+.sound[aria-pressed="false"]{opacity:.6}
+.sound:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .toast{font-size:14px;color:var(--accent);text-align:center;min-height:1.4em}
 .foot{text-align:center;font-size:13px;color:var(--muted)}
 .foot a{color:var(--muted)}
@@ -83,7 +86,7 @@ p{margin:0}
 <body>
 
 <div class="wrap">
-  <div class="brand"><span>이상한 생선가게 이음수산</span><span>FISH DEX TEST</span></div>
+  <div class="brand"><span>이상한 생선가게 이음수산</span><button class="sound" id="sound" type="button" aria-pressed="true">♪ 소리 켜짐</button></div>
 
   <section class="card" id="start">
     <p class="meta">대표생선 12종 · 질문 8개 · 1분</p>
@@ -258,7 +261,7 @@ function renderQ(){
   q.o.forEach(([t,val],i)=>{
     const b=document.createElement("button");
     b.type="button"; b.className="opt"; b.id=`opt-${step}-${i}`; b.textContent=t;
-    b.addEventListener("click",()=>{score[q.axis]+=val;step++;step<QS.length?renderQ():finish()});
+    b.addEventListener("click",()=>{Sound.pick();score[q.axis]+=val;step++;step<QS.length?renderQ():finish()});
     $("opts").appendChild(b);
   });
 }
@@ -290,6 +293,7 @@ function renderResult(f){
 }
 
 function finish(){
+  setTimeout(()=>Sound.reveal(),120);
   $("barfill").style.width="100%";
   const f=pick();
   try{ if(location.hash!=="#"+f.id) history.replaceState(null,"","#"+f.id) }catch(e){}
@@ -313,10 +317,88 @@ $("share").addEventListener("click",async()=>{
 
 function openDex(){show("dex")}
 $("dexgrid").innerHTML=FISH.map(f=>`<button type="button" class="dexcard" id="dex-${f.id}" data-id="${f.id}"><span class="pic">${fishImg(f)}</span><span class="meta">No.${f.no}</span><b>${f.name}</b><small>${f.nick}</small></button>`).join("");
-$("dexgrid").addEventListener("click",e=>{const b=e.target.closest(".dexcard");if(!b)return;const f=FISH.find(x=>x.id===b.dataset.id);renderResult(f);$("again").textContent="나도 해보기";$("rlabel").textContent="도감 속 생선";});
+$("dexgrid").addEventListener("click",e=>{const b=e.target.closest(".dexcard");if(!b)return;Sound.pick();if(Sound.isOn())Sound.startMusic();const f=FISH.find(x=>x.id===b.dataset.id);renderResult(f);$("again").textContent="나도 해보기";$("rlabel").textContent="도감 속 생선";});
 $("dexStart").addEventListener("click",openDex);
 $("dexRes").addEventListener("click",openDex);
 $("dexGo").addEventListener("click",start);
+
+
+// ── 소리: 파일 없이 브라우저에서 직접 만드는 잔잔한 바닷가 음악과 선택음 ──
+const Sound = (()=>{
+  let ctx=null, master=null, musicBus=null, sfxBus=null, timer=null, nextT=0, step=0, on=true, started=false;
+  try{ if(localStorage.getItem("ieum-sound")==="off") on=false }catch(e){}
+  // 다장조 5음계: 바다 위를 천천히 걷는 느낌의 멜로디
+  const MEL=[ 0,4,7,9, 7,4,2,4, 0,2,4,7, 9,7,4,null ];
+  const CHORDS=[[48,55,64],[45,52,60],[41,48,57],[43,50,59]]; // C, Am, F, G (낮은 화음)
+  const midi=n=>440*Math.pow(2,(n-69)/12);
+  function init(){
+    if(ctx) return;
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    ctx=new AC();
+    master=ctx.createGain(); master.gain.value=on?1:0; master.connect(ctx.destination);
+    musicBus=ctx.createGain(); musicBus.gain.value=0.55;
+    const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2200;
+    const delay=ctx.createDelay(); delay.delayTime.value=0.42;
+    const fb=ctx.createGain(); fb.gain.value=0.33;
+    musicBus.connect(lp); lp.connect(master); lp.connect(delay); delay.connect(fb); fb.connect(delay); delay.connect(master);
+    sfxBus=ctx.createGain(); sfxBus.gain.value=0.9; sfxBus.connect(master);
+    waves();
+  }
+  function note(freq,t,dur,vol,type){
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type||"triangle"; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(musicBus); o.start(t); o.stop(t+dur+0.05);
+  }
+  function waves(){ // 멀리서 들리는 파도 소리
+    const len=ctx.sampleRate*4, buf=ctx.createBuffer(1,len,ctx.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+    const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true;
+    const bp=ctx.createBiquadFilter(); bp.type="lowpass"; bp.frequency.value=500;
+    const g=ctx.createGain(); g.gain.value=0.0;
+    const lfo=ctx.createOscillator(), lg=ctx.createGain(); lfo.frequency.value=0.09; lg.gain.value=0.025;
+    const base=ctx.createConstantSource?ctx.createConstantSource():null;
+    lfo.connect(lg); lg.connect(g.gain); if(base){base.offset.value=0.03;base.connect(g.gain);base.start()}
+    src.connect(bp); bp.connect(g); g.connect(musicBus); src.start(); lfo.start();
+  }
+  const BEAT=0.75; // 한 박 0.75초, 아주 느린 걸음
+  function schedule(){
+    while(nextT<ctx.currentTime+1.2){
+      const m=MEL[step%MEL.length];
+      if(m!==null){ note(midi(72+m),nextT,2.2,0.06); }
+      if(step%8===0){ const ch=CHORDS[(step/8)%CHORDS.length|0]; ch.forEach(n=>note(midi(n),nextT,BEAT*8,0.025,"sine")); }
+      nextT+=BEAT; step++;
+    }
+  }
+  function startMusic(){
+    init(); if(!ctx) return;
+    if(ctx.state==="suspended") ctx.resume();
+    if(started) return; started=true;
+    nextT=ctx.currentTime+0.1; schedule(); timer=setInterval(schedule,300);
+  }
+  function blip(f1,f2,t0,dur,vol){
+    const o=ctx.createOscillator(), g=ctx.createGain(); o.type="sine";
+    o.frequency.setValueAtTime(f1,t0); o.frequency.exponentialRampToValueAtTime(f2,t0+dur*0.7);
+    g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(vol,t0+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g); g.connect(sfxBus); o.start(t0); o.stop(t0+dur+0.02);
+  }
+  function pick(){ init(); if(!ctx||!on) return; const t=ctx.currentTime; blip(420,880,t,0.14,0.22); } // 뽀글 물방울
+  function reveal(){ init(); if(!ctx||!on) return; const t=ctx.currentTime;
+    [72,76,79,84].forEach((n,i)=>blip(midi(n),midi(n)*1.002,t+i*0.11,0.6,0.12)); } // 도감 등록 차임
+  function setOn(v){
+    on=v; try{localStorage.setItem("ieum-sound",v?"on":"off")}catch(e){}
+    const b=$("sound"); b.setAttribute("aria-pressed",String(v)); b.textContent=v?"♪ 소리 켜짐":"♪ 소리 꺼짐";
+    if(ctx){ master.gain.setTargetAtTime(v?1:0,ctx.currentTime,0.15) }
+    if(v) startMusic();
+  }
+  return {startMusic,pick,reveal,setOn,isOn:()=>on};
+})();
+Sound.setOn(Sound.isOn()); // 버튼 표시만 맞춤 (소리는 첫 터치 후에 시작)
+$("sound").addEventListener("click",()=>Sound.setOn(!Sound.isOn()));
+// 첫 터치에서 음악 시작 (브라우저 정책상 사용자 동작이 있어야 소리가 남)
+["go","dexStart","dexGo","again"].forEach(id=>$(id).addEventListener("click",()=>{ if(Sound.isOn()) Sound.startMusic() }));
 
 function route(){
   const id=location.hash.replace("#","");
