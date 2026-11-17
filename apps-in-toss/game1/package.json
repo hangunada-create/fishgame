@@ -1,0 +1,18 @@
+{
+  "name": "ieum-fish-match",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build && ait build",
+    "deploy": "ait deploy"
+  },
+  "devDependencies": {
+    "@apps-in-toss/devtools": "^3.10.0",
+    "vite": "^6.4.6"
+  },
+  "dependencies": {
+    "@apps-in-toss/web-framework": "^3.10.0"
+  }
+}

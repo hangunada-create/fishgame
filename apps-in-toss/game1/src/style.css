@@ -1,0 +1,106 @@
+/* 생선 짝꿍 찾기 · 앱인토스판
+   웹판(fishgame/)과 같은 색·배치. 토스 안에서는 화면 전체를 쓰고,
+   오른쪽 위 토스 버튼(더보기·닫기)과 겹치지 않도록 위쪽을 비워 둔다. */
+@font-face{font-family:"Jua";src:url("./fonts/jua-subset.woff2") format("woff2");font-display:swap}
+@font-face{font-family:"Gowun Dodum";src:url("./fonts/gowun-dodum-subset.woff2") format("woff2");font-display:swap}
+
+:root{
+  --sea:#f2f6f9; --ink:#1d3557; --muted:#5b6b80;
+  --wave:#3da9fc; --wave-deep:#1e88e5;
+  --card:#ffffff; --line:#d6e3ee; --coral:#ff7a59;
+  --shadow:rgba(29,53,87,.14);
+  --display:"Jua","Gowun Dodum",system-ui,sans-serif;
+  --body:"Gowun Dodum",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
+  /* main.js가 토스 Safe Area 값으로 덮어쓴다 */
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+  --navh:52px; /* 토스 게임 내비게이션 바(더보기·닫기) 자리 */
+  color-scheme:light;
+}
+
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+body{margin:0;background:var(--sea);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(14px,var(--sal));padding-right:max(14px,var(--sar));
+  padding-top:calc(var(--sat) + var(--navh));padding-bottom:max(20px,var(--sab))}
+img{-webkit-user-drag:none}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+
+header{text-align:center;display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-family:var(--display);color:var(--wave);letter-spacing:.08em;font-size:14px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,7vw,36px);margin:0;line-height:1.15}
+
+.hud{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
+.stat{display:flex;align-items:baseline;gap:5px;padding:5px 12px;border-radius:999px;background:var(--card);box-shadow:0 2px 6px var(--shadow)}
+.stat b{font-family:var(--display);font-weight:400;font-size:20px;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+.ctl{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer;min-height:36px}
+button{touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--wave);outline-offset:2px}
+
+#news{text-align:center;min-height:1.5em;margin:0;font-family:var(--display);color:var(--coral);font-size:17px}
+
+/* 판 전체가 한 화면에 들어오도록, 남은 세로 길이로 판 너비를 제한한다 (24장=6줄, 16장=4줄) */
+#board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;margin:0 auto;
+  max-width:min(460px, calc((100dvh - var(--sat) - var(--navh) - var(--sab) - 230px) * 4 / 6 + 10px))}
+#board.small{max-width:min(460px, calc(100dvh - var(--sat) - var(--navh) - var(--sab) - 230px))}
+@media (min-width:601px){#board:not(.small){grid-template-columns:repeat(6,1fr);max-width:680px;gap:10px}}
+.card{aspect-ratio:1/1;max-width:100%;perspective:900px;border:0;padding:0;background:none;cursor:pointer}
+.inner{position:relative;width:100%;height:100%;transition:transform .4s;transform-style:preserve-3d}
+.card.flipped .inner,.card.matched .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;overflow:hidden;background:var(--card);box-shadow:0 4px 10px var(--shadow)}
+.back img{width:100%;height:100%;object-fit:cover;display:block}
+.front{transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.front img{width:92%;height:78%;object-fit:contain;display:block;transition:transform .3s .15s}
+.card.matched .front img{transform:translateY(-11%) scale(.8)}
+.front .tag{position:absolute;left:0;right:0;bottom:0;padding:2px 0 4px;font-family:var(--display);font-size:clamp(12px,3.4vw,16px);
+  color:#fff;background:var(--coral);opacity:0;transform:translateY(100%);transition:opacity .3s .15s,transform .3s .15s;text-align:center}
+.card.matched .tag{opacity:1;transform:none}
+.card.matched .face{box-shadow:0 0 0 3px var(--coral),0 4px 10px var(--shadow)}
+.card.matched{cursor:default}
+.card.matched .front{animation:pop .4s ease}
+.card.wrong .front{animation:shake .35s}
+@keyframes pop{50%{transform:rotateY(180deg) scale(1.08)}}
+@keyframes shake{25%{transform:rotateY(180deg) translateX(-4px)}75%{transform:rotateY(180deg) translateX(4px)}}
+
+/* 창 */
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(14,26,38,.55);z-index:20;
+  padding:calc(var(--sat) + var(--navh)) max(16px,var(--sar)) max(16px,var(--sab)) max(16px,var(--sal))}
+#confirm{z-index:30}
+.panel{background:#fff;color:var(--ink);border-radius:18px;padding:22px 20px;max-width:380px;width:100%;max-height:100%;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.panel.small{max-width:320px}
+.panel h2{font-family:var(--display);font-weight:400;font-size:26px;margin:0;line-height:1.2}
+.panel p{margin:0}
+.lead{color:var(--muted)}
+.shoal{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:100%}
+.shoal img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#f5f9fc;border-radius:8px}
+.modes{display:flex;flex-direction:column;gap:8px;width:100%}
+.mode{font:inherit;text-align:left;border:0;border-radius:14px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;
+  background:#f5f9fc;color:var(--ink);box-shadow:inset 0 0 0 2px var(--line)}
+.mode.main{background:var(--wave);color:#fff;box-shadow:0 4px 0 var(--wave-deep)}
+.mode:active{transform:translateY(2px)}
+.mode span{flex:1;min-width:0}
+.mode strong{display:block;font-family:var(--display);font-weight:400;font-size:20px}
+.mode small{font-size:13px;opacity:.85}
+.mode i{font-style:normal;font-family:var(--display);font-size:13px;white-space:nowrap;opacity:.9}
+
+.cat{flex-shrink:0;width:130px;height:130px;border-radius:14px;animation:dance .6s infinite alternate}
+.result{font-variant-numeric:tabular-nums;color:var(--muted)}
+.msg{font-size:16px}
+.badge{font-family:var(--display);background:#fff1ec;color:#d9532f;border-radius:999px;padding:3px 12px}
+.go{font-family:var(--display);font-size:19px;border:0;border-radius:12px;padding:11px 22px;background:var(--wave);color:#fff;cursor:pointer;min-height:44px}
+.go:active{background:var(--wave-deep)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.go.sub{background:#fff;color:var(--wave-deep);box-shadow:inset 0 0 0 2px var(--wave)}
+.go.brag{background:var(--coral);width:100%;max-width:260px;box-shadow:0 4px 0 #d9532f}
+.go.brag:active{transform:translateY(2px);box-shadow:0 2px 0 #d9532f}
+#shareMsg{font-size:14px;color:#d9532f;min-height:1.4em}
+#fishList{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-top:12px;border-top:1px dashed var(--line)}
+#fishList h3{grid-column:1/-1;font-family:var(--display);font-weight:400;font-size:18px;margin:0}
+.fish{display:flex;flex-direction:column;align-items:center;padding:6px 4px;border-radius:10px;background:#f5f9fc}
+.fish img{width:100%;aspect-ratio:1/1;object-fit:contain}
+.fish b{font-family:var(--display);font-weight:400;font-size:16px}
+.fish.dim{opacity:.35}
+@keyframes dance{from{transform:rotate(-8deg)}to{transform:rotate(8deg) scale(1.06)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
