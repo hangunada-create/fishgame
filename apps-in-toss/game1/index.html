@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>생선 짝꿍 찾기</title>
+<link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">이상한생선가게 기억 게임</div>
+    <h1>생선 짝꿍 찾기</h1>
+  </header>
+
+  <div class="hud">
+    <div class="stat"><span>시간</span><b id="time">0</b><span>초</span></div>
+    <div class="stat"><span>뒤집기</span><b id="flips">0</b><span>번</span></div>
+    <div class="stat"><span>짝</span><b id="count">0</b><span id="total">/ 12</span></div>
+  </div>
+  <div class="hud">
+    <button class="ctl" id="music" type="button" aria-pressed="true">🎵 소리 끄기</button>
+    <button class="ctl" id="menu" type="button">처음으로</button>
+  </div>
+
+  <p id="news" aria-live="polite"></p>
+
+  <div id="board" aria-label="카드 판"></div>
+</div>
+
+<!-- 시작 화면 -->
+<div class="overlay" id="start">
+  <div class="panel" role="dialog" aria-labelledby="startTitle">
+    <h2 id="startTitle">생선 짝꿍 찾기</h2>
+    <p class="lead">카드를 두 장씩 뒤집어 같은 생선을 찾아 주세요. 짝을 맞추면 생선 이름이 나와요.</p>
+    <div class="shoal" id="shoal" aria-hidden="true"></div>
+    <div class="modes">
+      <button class="mode main" type="button" data-mode="full">
+        <span><strong>도전 · 12쌍</strong><small>60초 안에 성공하면 기억력 천재</small></span><i id="bestFull"></i>
+      </button>
+      <button class="mode" type="button" data-mode="easy">
+        <span><strong>연습 · 8쌍</strong><small>처음이거나 아이와 함께라면</small></span><i id="bestEasy"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 결과 창 -->
+<div class="overlay" id="clear" hidden>
+  <div class="panel" role="dialog" aria-labelledby="clearTitle">
+    <img class="cat" id="cat" alt="엄지를 든 216고양이">
+    <h2 id="clearTitle">게임 성공!</h2>
+    <p class="result" id="result"></p>
+    <span class="badge" id="genius" hidden>60초 안에 성공 · 기억력 천재</span>
+    <p class="msg" id="msg"></p>
+    <button class="go brag" id="brag" type="button">기록 자랑하기</button>
+    <p id="shareMsg" aria-live="polite"></p>
+    <div class="btns">
+      <button class="go" id="restart" type="button">한 판 더</button>
+      <button class="go sub" id="switch" type="button"></button>
+    </div>
+    <div id="fishList">
+      <h3>오늘 만난 생선</h3>
+    </div>
+  </div>
+</div>
+
+<!-- 확인 창 (뒤로가기·종료) -->
+<div class="overlay" id="confirm" hidden>
+  <div class="panel small" role="alertdialog" aria-labelledby="confirmTitle">
+    <h2 id="confirmTitle"></h2>
+    <p class="lead" id="confirmText"></p>
+    <div class="btns">
+      <button class="go sub" id="confirmNo" type="button">계속하기</button>
+      <button class="go" id="confirmYes" type="button"></button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
