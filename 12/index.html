@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>새벽 위판장 경매</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="목포 새벽 위판장에서 AI 상인 셋과 생선 경매 한판! 남의 속을 읽고 오늘의 요리에 필요한 생선을 모아 가장 많이 남기세요. 이상한생선가게 게임 12탄">
+<meta property="og:type" content="website">
+<meta property="og:title" content="새벽 위판장 경매 · 이상한생선가게 게임 12탄">
+<meta property="og:description" content="AI 상인 셋과 쪽지 경매 한판! 눈치 싸움으로 오늘의 요리 재료를 모아 가장 많이 남겨 보세요.">
+<meta property="og:url" content="https://hangunada-create.github.io/fishgame/12/">
+<meta property="og:image" content="https://hangunada-create.github.io/fishgame/12/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+/* 레이아웃: 위에 상인 셋, 가운데 경매 상자(생선·값·방식), 아래 오늘의 판매 요리와 버튼. 새벽 바다의 남색에 백열등 주황 */
+:root{
+  --paper:#f4f1ea; --card:#fffdf8; --ink:#1f2a37; --muted:#7b8494; --line:#e3ddd1;
+  --lamp:#f08a3c; --lamp-soft:#fde7d4; --sea:#24527a; --ok:#2f8f5b; --bad:#d0493b; --shadow:rgba(31,42,55,.10);
+  --body:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#141a22;--card:#1d2530;--ink:#e9edf2;--muted:#9aa4b2;--line:#2e3846;--lamp:#ff9d55;--lamp-soft:#3a2a1c;--sea:#7fb3e0;--ok:#5cc489;--bad:#ff7a6b;--shadow:rgba(0,0,0,.4);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#141a22;--card:#1d2530;--ink:#e9edf2;--muted:#9aa4b2;--line:#2e3846;--lamp:#ff9d55;--lamp-soft:#3a2a1c;--sea:#7fb3e0;--ok:#5cc489;--bad:#ff7a6b;--shadow:rgba(0,0,0,.4);color-scheme:dark}
+
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));padding-block:16px 36px}
+.wrap{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+header{text-align:center;display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--muted)}
+h1{margin:0;font-size:clamp(28px,8vw,38px);letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--lamp)}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.panel{background:var(--card);border-radius:18px;box-shadow:0 8px 24px var(--shadow);padding:18px 16px;display:flex;flex-direction:column;gap:12px}
+.panel h2{margin:0;font-size:18px}
+.panel p{margin:0;color:var(--muted);font-size:14px;text-wrap:pretty}
+.rules{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.rules b{color:var(--lamp)}
+.btn{font:inherit;font-size:17px;font-weight:700;border:0;border-radius:14px;padding:13px 18px;background:var(--lamp);color:#fff;cursor:pointer;width:100%}
+.btn.ghost{background:none;border:1.5px solid var(--line);color:var(--ink);font-weight:600}
+.btn.dark{background:var(--ink);color:var(--paper)}
+.btn:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
+
+/* 상인들 */
+.rivals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rv{position:relative;background:var(--card);border-radius:14px;box-shadow:0 4px 12px var(--shadow);padding:8px 6px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;border:2px solid transparent;transition:border-color .2s,opacity .2s}
+.rv.in{border-color:var(--lamp)}
+.rv.out{opacity:.45}
+.rv.win{border-color:var(--ok)}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px}
+.rv .nm{font-size:12px;font-weight:700;text-align:center;line-height:1.2}
+.rv .mn{font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.rv .got{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;min-height:16px}
+.chip{font-size:10px;line-height:1;padding:3px 5px;border-radius:6px;background:var(--lamp-soft);color:var(--ink)}
+/* 말풍선: 카드 안 아래쪽에 붙어 다음 상자까지 남음 */
+.bub{order:9;position:relative;margin-top:6px;width:100%;min-height:34px;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--paper);font-size:11.5px;line-height:1.3;padding:5px 6px;border-radius:10px;text-align:center;word-break:keep-all;visibility:hidden}
+.bub.on{visibility:visible;animation:pop .25s ease-out}
+.bub::before{content:"";position:absolute;left:50%;top:-5px;margin-left:-5px;border:5px solid transparent;border-bottom-color:var(--ink);border-top:0}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.hand{position:absolute;right:6px;top:6px;font-size:16px}
+
+/* 경매 상자 */
+.lot{background:var(--card);border-radius:18px;box-shadow:0 8px 24px var(--shadow);padding:12px 14px 14px;display:flex;flex-direction:column;gap:5px;align-items:center;text-align:center}
+.lothead{display:flex;justify-content:space-between;width:100%;font-size:12px;color:var(--muted)}
+.type{background:var(--sea);color:#fff;border-radius:999px;padding:3px 10px;font-weight:700;font-size:12px}
+.fishimg{width:min(230px,62%);aspect-ratio:2.6/1;object-fit:contain;mix-blend-mode:multiply;background:#fff;border-radius:10px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .fishimg{mix-blend-mode:normal}}
+.fname{font-size:20px;font-weight:800;margin:0}
+.fmeta{font-size:13px;color:var(--muted);margin:0}
+.fmeta b{color:var(--ink)}
+.need{font-size:12px;font-weight:700;color:var(--ok)}
+.price{font-size:38px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.02em}
+.price small{font-size:18px;font-weight:700;margin-left:2px}
+.price.up{color:var(--lamp)} .price.down{color:var(--sea)}
+.say{min-height:1.5em;font-size:14px;margin:0;color:var(--ink)}
+.say.bad{color:var(--bad)} .say.ok{color:var(--ok)}
+.actions{width:100%;display:flex;flex-direction:column;gap:8px}
+.slip{display:flex;align-items:center;gap:6px;justify-content:center}
+.slip button{font:inherit;font-weight:700;border:1.5px solid var(--line);background:none;color:var(--ink);border-radius:10px;width:46px;height:42px;cursor:pointer}
+.slip output{min-width:96px;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
+.quick{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.quick button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:5px 11px;cursor:pointer}
+.reveal div{transition:transform .3s}
+.reveal div.flip{transform:rotateY(90deg)}
+.reveal .tie{text-decoration:line-through;opacity:.55}
+.reveal{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
+.reveal div{background:var(--paper);border-radius:10px;padding:6px 2px;font-size:12px}
+.reveal b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.reveal .top{background:var(--lamp-soft);outline:2px solid var(--lamp)}
+
+/* 오늘의 판매 요리 */
+.me{background:var(--card);border-radius:18px;box-shadow:0 8px 24px var(--shadow);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.merow{display:flex;justify-content:space-between;align-items:baseline}
+.merow b{font-size:20px;font-variant-numeric:tabular-nums}
+.orders{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.order{border:1.5px dashed var(--line);border-radius:12px;padding:8px;font-size:12px;display:flex;flex-direction:column;gap:4px}
+.order.done{border-style:solid;border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,transparent)}
+.order .t{font-weight:800;font-size:13px}
+.order .r{color:var(--lamp);font-weight:800}
+.order .items{display:flex;flex-wrap:wrap;gap:4px}
+.order .items span{padding:2px 6px;border-radius:6px;background:var(--paper)}
+.order .items span.have{background:var(--ok);color:#fff}
+.mygot{display:flex;flex-wrap:wrap;gap:4px;font-size:12px;color:var(--muted);align-items:center}
+.queue{display:flex;flex-wrap:wrap;gap:4px;font-size:11px;color:var(--muted);align-items:center;padding-bottom:2px}
+.queue span{flex:none;padding:2px 6px;border-radius:6px;border:1px solid var(--line)}
+.queue span.cur{border-color:var(--lamp);color:var(--ink);font-weight:700}
+.queue span.need{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok);border-color:var(--ok)}
+.order .sm{color:var(--muted)}
+.order .warn{color:var(--bad);font-weight:700}
+.order.lost{border-color:var(--bad)}
+.ctl{font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:4px 10px;cursor:pointer;align-self:center}
+
+/* 오늘의 사건 · 소문 · 경매 기록 */
+.event{border:2px solid var(--lamp);background:var(--lamp-soft);border-radius:16px;padding:16px;text-align:center;display:flex;flex-direction:column;gap:6px}
+.event .ic{font-size:40px;line-height:1}
+.event .et{font-size:20px;font-weight:800}
+.event .ed{font-size:14px;color:var(--ink)}
+.rumor{background:var(--card);border-radius:14px;box-shadow:0 4px 12px var(--shadow);padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.rumor .rh{display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.rumor .rh button{font:inherit;font-size:12px;font-weight:700;border:1.5px solid var(--sea);color:var(--sea);background:none;border-radius:999px;padding:4px 10px;cursor:pointer}
+.rumor .rh button:disabled{opacity:.4;cursor:default}
+.rumor ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px;max-height:96px;overflow-y:auto}
+.rumor li.sure{color:var(--sea);font-weight:700}
+.rumor li.new{animation:pop .3s ease-out}
+.log{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;font-size:12px;min-height:20px}
+.log span{padding:2px 7px;border-radius:999px;background:var(--paper)}
+.log span.up{background:var(--lamp-soft);font-weight:700}
+.log span.fold{color:var(--muted);text-decoration:line-through}
+.raise{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.raise button{font:inherit;font-size:16px;font-weight:800;border:0;border-radius:12px;padding:12px 4px;background:var(--lamp);color:#fff;cursor:pointer}
+.raise button:disabled{opacity:.35;cursor:default}
+.turn{font-size:13px;font-weight:700;color:var(--lamp);text-align:center;margin:0}
+
+
+/* 결과 */
+.rank{display:flex;flex-direction:column;gap:8px}
+.rk{display:grid;grid-template-columns:28px 40px 1fr auto;gap:10px;align-items:center;background:var(--paper);border-radius:12px;padding:8px 10px}
+.rk.me1{outline:2px solid var(--lamp)}
+.rk .no{font-weight:800;font-size:18px;text-align:center}
+.rk .who{font-size:13px;line-height:1.35}
+.rk .who small{color:var(--muted);display:block}
+.rk .tot{font-weight:800;font-variant-numeric:tabular-nums;text-align:right}
+.rk .tot small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.panel .big{font-size:clamp(34px,10vw,48px);font-weight:800;text-align:center;margin:0;color:var(--lamp);font-variant-numeric:tabular-nums}
+.site{color:var(--lamp);text-decoration:none;font-size:14px;text-align:center}
+#shareBox{width:100%;font:inherit;font-size:13px;padding:6px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);resize:none}
+.note{font-size:13px;color:var(--muted);margin:0;text-align:center;min-height:1.2em}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">이상한생선가게 게임 12탄 · 목포</div>
+    <h1>새벽 위판장 <em>경매</em></h1>
+    <p class="sub">AI 상인 셋과 쪽지·올려 부르기 눈치 싸움</p>
+  </header>
+
+  <section class="panel" id="intro">
+    <h2>새벽 5시, 위판장 종이 울려요</h2>
+    <ul class="rules">
+      <li>생선 상자 <b>10개</b>가 하나씩 경매에 나와요. 모두 <b>80만 원</b>으로 시작해요.</li>
+      <li>나에게는 <b>오늘의 판매 요리 2가지</b>가 있어요. 요리에 필요한 생선을 다 모으면 그 요리를 팔아 <b>돈을 벌어요</b>. 상인들도 저마다 필요한 생선이 있지만 <b>몰래</b> 숨겨요.</li>
+      <li>상자마다 먼저 <b>쪽지</b>에 몰래 첫 값을 써요. 쪽지를 펼치면 가장 높은 사람이 일단 앞서요.</li>
+      <li>그다음은 <b>올려 부르기</b>: 차례대로 돌아가며 값을 더 올리거나 포기해요. 모두 포기하면 마지막으로 부른 사람이 그 값에 가져가요. 내 차례엔 얼마든지 생각해도 돼요.</li>
+      <li>쪽지에 0을 쓰면(안 사요) 그 상자 경매엔 끼지 않아요.</li>
+      <li>필요한 생선을 다 못 모으면 <b>다른 요리로 바꿔 팔아요</b>. 이때는 생선 한 상자에 요리값 몫의 <b>절반</b>만 받아서, <b>생선 산 값보다 적게 받기 쉬워요</b>.<br>
+        <span style="color:var(--muted)">예) 홍어 잔칫상(홍어+민어): 둘 다 모으면 <b>+80만</b>. 홍어만 모으면 다른 요리로 <b>+20만</b>뿐 → 홍어를 25만에 샀다면 5만 손해!</span></li>
+      <li><b>앞으로 나올 생선 순서</b>를 꼭 보세요. 필요한 생선이 더 안 나오면 그 요리는 완성할 수 없어요. 그럴 땐 그 요리 생선에 큰돈을 쓰지 마세요.</li>
+      <li>끝나면 <b>남은 돈 + 요리로 번 돈</b>으로 순위를 매겨요. 요리에 안 쓰는 생선은 사 봐야 손해예요.</li>
+      <li>위판장엔 <b>소문</b>이 돌아요. 공짜 소문은 가끔 <b>헛소문</b>이고, 2만 원을 내면 <b>확실한 소문</b>을 들을 수 있어요.</li>
+      <li>경매 전에 생긴 <b>오늘의 사건</b>이 하나 있어요. 시작할 때 알려 주고, 오늘 경매 내내 영향을 줘요.</li>
+      <li>상인들 성격은 직접 겪으며 알아내세요.</li>
+    </ul>
+    <button class="btn" id="startBtn" type="button">경매장 들어가기</button>
+  </section>
+
+  <section class="panel" id="eventPanel" hidden>
+    <h2 style="text-align:center">오늘의 사건</h2>
+    <div class="event"><div class="ic" id="evIc"></div><div class="et" id="evT"></div><div class="ed" id="evD"></div></div>
+    <p style="text-align:center">오늘의 판매 요리: <b id="evDishes"></b></p>
+    <button class="btn" id="goBtn" type="button">경매 시작</button>
+  </section>
+
+  <div id="play" hidden>
+    <div class="rivals" id="rivals" style="margin-top:4px"></div>
+    <section class="rumor" style="margin-top:10px">
+      <div class="rh"><span>🗣️ 위판장 소문 <small id="evTag" style="color:var(--lamp)"></small></span><button type="button" id="buyRumor">확실한 소문 듣기 −2만</button></div>
+      <ul id="rumors"><li style="color:var(--muted)">아직 들은 소문이 없어요</li></ul>
+    </section>
+
+    <section class="lot" style="margin-top:12px" aria-live="polite">
+      <div class="lothead"><span id="lotNo">경매 1 / 16</span><span class="type" id="lotType">쪽지 → 올려 부르기</span></div>
+      <img class="fishimg" id="fimg" alt="">
+      <p class="fname" id="fname">광어 한 상자</p>
+      <p class="fmeta" id="fmeta">오늘 시세 <b>12만</b></p>
+      <span class="need" id="fneed"></span>
+      <div class="price" id="price">0<small>만</small></div>
+      <p class="say" id="say"></p>
+      <div class="reveal" id="reveal" hidden></div>
+      <div class="log" id="log"></div>
+      <p class="turn" id="turn"></p>
+      <div class="actions" id="actSealed" hidden>
+        <div class="slip">
+          <button type="button" data-d="-5">−5</button><button type="button" data-d="-1">−1</button>
+          <output id="slipVal">0만</output>
+          <button type="button" data-d="1">+1</button><button type="button" data-d="5">+5</button>
+        </div>
+        <div class="quick" id="quick"></div>
+        <button class="btn" id="slipBtn" type="button">쪽지 내기</button>
+        <button class="btn ghost" id="slipPass" type="button">이번엔 안 사요</button>
+      </div>
+      <div class="actions" id="actRaise" hidden>
+        <div class="raise"><button type="button" data-r="1">+1 올리기</button><button type="button" data-r="3">+3 올리기</button><button type="button" data-r="5">+5 올리기</button></div>
+        <button class="btn ghost" id="foldBtn" type="button">포기</button>
+      </div>
+      <div class="actions" id="actNext" hidden>
+        <button class="btn dark" id="nextBtn" type="button">다음 상자</button>
+      </div>
+    </section>
+
+    <section class="me" style="margin-top:12px">
+      <div class="merow"><span>내 돈</span><b id="myMoney">80만</b></div>
+      <div class="merow" style="font-size:13px;color:var(--muted)"><span>지금 끝나면 (남은 돈 + 요리)</span><span id="myValue">80만</span></div>
+      <div style="font-size:13px;font-weight:700">오늘의 판매 요리</div>
+      <div class="orders" id="myOrders"></div>
+      <div class="mygot" id="myGot"></div>
+      <div class="queue" id="queue"></div>
+      <p style="margin:0;font-size:11px;color:var(--muted)">초록 = 내 요리에 아직 필요한 생선</p>
+    </section>
+    <button class="ctl" id="sound" type="button" style="margin-top:10px">소리 끄기</button>
+  </div>
+
+  <section class="panel" id="final" hidden>
+    <h2 id="fTitle" style="text-align:center">경매 끝!</h2>
+    <p class="big" id="fBig"></p>
+    <p id="fLine" style="text-align:center"></p>
+    <div class="rank" id="rank"></div>
+    <p id="fReveal"></p>
+    <button class="btn" id="againBtn" type="button">다시 경매장으로</button>
+    <button class="btn ghost" id="brag" type="button">자랑하기</button>
+    <p class="note" id="shareMsg" aria-live="polite"></p>
+    <textarea id="shareBox" rows="4" readonly hidden aria-label="자랑 문구"></textarea>
+    <a class="site" href="https://ieumfish.co.kr" target="_blank" rel="noopener">진짜 생선은 이음수산에서 · ieumfish.co.kr →</a>
+  </section>
+</div>
+
+<script>
+(function(){
+  // ── 생선과 시세 (만 원) ──
+  const FISH = {
+    광어:{img:1,p:12}, 민어:{img:2,p:15}, 밴댕이:{img:3,p:5}, 병어:{img:4,p:10}, 삼치:{img:5,p:8}, 숭어:{img:6,p:7},
+    붕장어:{img:7,p:10}, 웅어:{img:8,p:8}, 전어:{img:9,p:6}, 준치:{img:10,p:9}, 참돔:{img:11,p:14}, 홍어:{img:12,p:16}
+  };
+  const SP = Object.keys(FISH);
+  // 오늘의 판매 요리 (필요한 생선 → 판매 금액). 금액은 시세 합의 약 2.5배
+  const ORDERS = [
+    { t:"횟집 모둠회", f:["광어","참돔","숭어"] },
+    { t:"홍어 잔칫상", f:["홍어","민어"] },
+    { t:"여름 보양탕", f:["민어","붕장어"] },
+    { t:"가을 구이집", f:["전어","삼치","병어"] },
+    { t:"봄 회무침", f:["웅어","준치","밴댕이"] },
+    { t:"목포 한정식", f:["홍어","병어","준치"] },
+    { t:"고급 일식집", f:["참돔","민어"] },
+    { t:"포장마차", f:["밴댕이","전어","숭어"] },
+    { t:"초밥집", f:["광어","붕장어"] },
+    { t:"제사상", f:["참돔","병어","삼치"] }
+  ].map(o => ({ ...o, r: Math.round(o.f.reduce((a, s) => a + FISH[s].p, 0) * 2.5 / 5) * 5 }));
+  const START = 80, LOTS = 10, PART = .5;   // 다 못 모으면 다른 요리로 바꿔 팔아 모은 몫의 절반만 받음
+
+  // ── 상인들 (성격) ──
+  const RIVALS = [
+    { id:"halme", name:"홍어 할매", ch:"홍", color:"#b5483d", fav:["홍어","민어","준치"],
+      talk:{ want:["이건 내 꺼여!","홍어 없인 장사 못 혀","놓칠 수 없제"], drop:["에잇, 비싸다","됐어, 됐어"], win:["좋다, 가져가제"] } },
+    { id:"kim", name:"얌체 김사장", ch:"김", color:"#4d5bb5", fav:[],
+      talk:{ want:["이건 꼭 사야겠는데?","오늘 이거 귀하네~","나도 끝까지 가요"], drop:["아이고, 양보할게요 ㅎㅎ","에이, 그 값엔 안 사지"], win:["어… 내가 산 거예요?","허, 비싸게 샀네"] } },
+    { id:"park", name:"꼼꼼 박씨", ch:"박", color:"#2f7d5c", fav:[],
+      talk:{ want:["계산은 끝났어요","적당한 값이면요"], drop:["그 값은 안 맞아요","손해 보는 장사는 안 합니다"], win:["계산대로네요"] } }
+  ];
+
+  const $ = id => document.getElementById(id);
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const won = n => n + "만";
+
+  const snd = n => { const a = new Audio("sound/" + n + ".mp3"); a.preload = "auto"; return a; };
+  const S = { tick: snd("flip"), win: snd("match"), lose: snd("fail"), end: snd("clear") };
+  S.tick.volume = .25; S.win.volume = .6; S.lose.volume = .45; S.end.volume = .7;
+  let soundOn = true;
+  const play = a => { if (!soundOn) return; try { a.currentTime = 0; const p = a.play(); if (p) p.catch(()=>{}); } catch(e){} };
+
+  // ── 오늘의 사건 (경매 전에 생긴 일 하나가 오늘 경매에 영향) ──
+  const EVENTS = [
+    { id:"storm", ic:"🌀", t:"태풍 소식", d:"배 한 척이 못 들어왔어요. 상자가 9개만 나와요." },
+    { id:"party", ic:"🎉", t:"횟집 단체 예약", d:"광어·참돔이 들어간 요리는 오늘 판매값이 1.5배예요." },
+    { id:"catch", ic:"🎣", t:"풍어", d:"그물 가득! 한 생선이 상자 2개 더 나와요." },
+    { id:"thin", ic:"💸", t:"지갑 얇은 날", d:"어제 장사가 시원찮았어요. 모두 65만 원으로 시작해요." },
+    { id:"gossip", ic:"🗣️", t:"소문 많은 날", d:"수다쟁이 상인들이 몰려왔어요. 공짜 소문이 상자마다 돌아요." },
+    { id:"late", ic:"⏰", t:"홍어 할매 지각", d:"할매가 늦잠을 잤어요. 처음 상자 3개는 할매 없이 경매해요." },
+    { id:"stock", ic:"📦", t:"어제 남은 생선", d:"모두 자기 요리에 쓸 생선을 한 상자씩 들고 시작해요. 누가 무엇을 들고 왔는지는 비밀!" },
+    { id:"rich", ic:"💰", t:"김사장 대박 난 날", d:"어제 장사가 대박 난 얌체 김사장이 100만 원을 들고 왔어요. 값을 크게 부를지도 몰라요." }
+  ];
+  const ROUND_STEP = 650;   // 상인 차례 사이 간격
+
+  // ── 상태 ──
+  let players, lots, li, cur = null, slipVal = 0, busy = false, ev = null, rumors = [], heard = new Set();
+
+  // 요리 정산: 다 모으면 판매 금액 전부, 일부만 모으면 다른 요리로 바꿔 몫의 절반. 요리에 안 쓰는 생선은 0원
+  function settleGot(orders, got){
+    const best = { done: [], part: [], left: {}, val: -Infinity };
+    for (const ord of [orders, orders.slice().reverse()]) {
+      const cnt = {}; got.forEach(s => cnt[s] = (cnt[s] || 0) + 1);
+      const done = [], part = []; let val = 0;
+      for (const o of ord) if (o.f.every(s => cnt[s] > 0)) { o.f.forEach(s => cnt[s]--); done.push(o); val += o.r; }
+      for (const o of ord) { if (done.includes(o)) continue; const k = o.f.filter(s => cnt[s] > 0); if (!k.length) continue;
+        const pv = o.r / o.f.length * PART * k.length;
+        k.forEach(s => cnt[s]--); part.push({ o, k: k.length, v: Math.round(pv) }); val += pv; }
+      if (val > best.val) Object.assign(best, { done, part, left: cnt, val: Math.round(val) });
+    }
+    return best;
+  }
+  function settle(p){ const b = settleGot(p.orders, p.got); return { ...b, total: p.money + b.val }; }
+  // 이 생선 한 상자가 나에게 얼마짜리인가: 지금 당장의 차이 + 앞으로 요리를 완성할 기대
+  function worth(p, s, lotsLeft){
+    const now = settleGot(p.orders, p.got).val, withS = settleGot(p.orders, p.got.concat(s)).val;
+    let v = withS - now;
+    const have = {}; p.got.forEach(x => have[x] = (have[x] || 0) + 1);
+    for (const o of p.orders) {
+      if (!o.f.includes(s) || have[s] > 0 && o.f.every(x => have[x] > 0)) continue;
+      const missing = o.f.filter(x => !(have[x] > 0)); if (!missing.includes(s) || missing.length < 2) continue;
+      const others = missing.filter(x => x !== s);
+      if (!others.every(x => lotsLeft.filter(l => l.s === x).length > 0)) continue;
+      v = Math.max(v, (withS - now) + (o.r * (1 - PART)) / missing.length * .6);
+    }
+    return Math.max(v, 0);
+  }
+  // 상인이 이 상자에 낼 최대값
+  function aiMax(p, lot, lotsLeft){
+    const s = lot.s, base = FISH[s].p, need = worth(p, s, lotsLeft);
+    let m = need;
+    if (p.id === "halme") m = p.def.fav.includes(s) ? Math.max(need, base * 1.3) * 1.15 : need * .97;
+    if (p.id === "park") m = need * 1.02;
+    if (p.id === "kim") { p.pump = need <= base + .01; m = p.pump ? base * rand(.9, 1.5) : need * 1.12; }
+    m *= rand(.92, 1.08);
+    const reserve = p.id === "park" ? 12 : 4;
+    return Math.max(0, Math.min(Math.round(m), p.money - (lotsLeft.length > 2 ? reserve : 0)));
+  }
+
+  function makeLots(){
+    // 모두의 요리에 든 생선을 고루 섞어 10상자. 한 사람이 다 모으기 어렵게, 겹치게
+    const pool = [];
+    players.forEach(p => p.orders.forEach(o => o.f.forEach(s => pool.push(s))));
+    shuffle(pool);
+    const list = [], count = {};
+    // 내 요리에 필요한 생선은 적어도 한 상자씩 꼭 나옴 (처음부터 완성 불가능한 요리가 없게)
+    for (const s of new Set(players[0].orders.flatMap(o => o.f))) { list.push(s); count[s] = 1; }
+    // 상인들도 요리 하나는 완성할 길이 있게: 새로 넣을 생선이 가장 적은 요리의 생선을 채움
+    for (const p of players.slice(1)) {
+      const o = p.orders.slice().sort((x, y) => x.f.filter(f => !count[f]).length - y.f.filter(f => !count[f]).length)[0];
+      for (const f of o.f) if (!count[f] && list.length < LOTS) { list.push(f); count[f] = 1; }
+    }
+    for (const s of pool) { if (list.length >= LOTS - 1) break; if ((count[s] || 0) >= 2) continue; count[s] = (count[s] || 0) + 1; list.push(s); }
+    while (list.length < LOTS) list.push(pick(SP));
+    return shuffle(list).map(s => ({ s, type: "sealed" }));
+  }
+
+  function newGame(){
+    ev = pick(EVENTS);
+    const boost = o => ev.id === "party" && o.f.some(x => x === "광어" || x === "참돔") ? { ...o, r: Math.round(o.r * 1.5 / 5) * 5 } : { ...o };
+    const deck = shuffle(ORDERS.slice()).map(boost);
+    const money = ev.id === "thin" ? 65 : START;
+    players = [{ id:"me", name:"나", money, got: [], paid: [], orders: [deck.pop(), deck.pop()] }]
+      .concat(RIVALS.map(d => ({ id: d.id, name: d.name, def: d, money, got: [], paid: [], orders: [deck.pop(), deck.pop()] })));
+    if (ev.id === "rich") players.find(p => p.id === "kim").money = 100;
+    players.forEach(p => p.start = p.money);
+    // 어제 남은 생선: 각자 요리 생선 하나를 공짜로 들고 시작
+    if (ev.id === "stock") players.forEach(p => { const f = pick(p.orders.flatMap(o => o.f)); p.got.push(f); p.paid.push(0); });
+    lots = makeLots();
+    if (ev.id === "storm") { const mine = new Set(players[0].orders.flatMap(o => o.f)); let k = lots.findIndex(l => !mine.has(l.s)); if (k < 0) k = lots.length - 1; lots.splice(k, 1); }
+    if (ev.id === "catch") { const sp = pick(players[0].orders.concat(players[1].orders).flatMap(o => o.f)); ev.d = "그물 가득! " + sp + " 상자가 2개 더 나와요."; lots.splice(2 + Math.floor(Math.random() * 3), 0, { s: sp }); lots.splice(6 + Math.floor(Math.random() * 3), 0, { s: sp }); }
+    li = 0; rumors = []; heard = new Set(); cur = null;
+    $("evIc").textContent = ev.ic; $("evT").textContent = ev.t; $("evD").textContent = ev.d;
+    $("evDishes").textContent = players[0].orders.map(o => o.t + "(" + o.f.join("·") + ", +" + o.r + "만)").join(" / ");
+    $("intro").hidden = true; $("final").hidden = true; $("play").hidden = true; $("eventPanel").hidden = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  $("goBtn").addEventListener("click", () => {
+    $("eventPanel").hidden = true; $("play").hidden = false;
+    $("evTag").textContent = "· 오늘: " + ev.t;
+    renderRumors(); renderRivals(); renderMe(); startLot();
+  });
+
+  // ── 소문 ──
+  // 진짜: 상인이 아직 못 모은 필요한 생선 / 헛소문(김사장이 퍼뜨림): 필요 없는 생선
+  function needOf(p){ const have = {}; p.got.forEach(x => have[x] = (have[x] || 0) + 1); const st = settle(p); return [...new Set(p.orders.filter(o => !st.done.includes(o)).flatMap(o => o.f.filter(x => !(have[x] > 0))))]; }
+  function freeRumor(){
+    const rv = pick(players.slice(1)), need = needOf(rv), fake = Math.random() < .3;
+    let s;
+    if (fake || !need.length) { const not = SP.filter(x => !rv.orders.some(o => o.f.includes(x)) && lots.slice(li).some(l => l.s === x)); if (!not.length) return; s = pick(not); }
+    else s = pick(need);
+    addRumor({ text: rv.name + "가 오늘 " + s + "을(를) 찾는대요", fake: fake || !need.length, sure: false });
+  }
+  function addRumor(r){ rumors.unshift({ ...r, at: li }); renderRumors(true); }
+  function renderRumors(fresh){
+    $("rumors").innerHTML = rumors.length ? rumors.map((r, i) => `<li class="${r.sure ? "sure" : ""}${fresh && i === 0 ? " new" : ""}">${r.sure ? "✔ 확실: " : "❓ "}${r.text}</li>`).join("") : '<li style="color:var(--muted)">아직 들은 소문이 없어요</li>';
+    $("buyRumor").disabled = !players || players[0].money < 2 || (cur && cur.boughtRumor);
+  }
+  $("buyRumor").addEventListener("click", () => {
+    const me = players[0]; if (me.money < 2 || (cur && cur.boughtRumor)) return;
+    // 아직 확실히 들은 적 없는 (상인, 생선) 하나
+    const cand = []; players.slice(1).forEach(p => needOf(p).forEach(s => { if (!heard.has(p.id + s)) cand.push([p, s]); }));
+    me.money -= 2; if (cur) cur.boughtRumor = true;
+    if (!cand.length) addRumor({ text: "상인들 필요한 생선은 이제 다 들었어요", sure: true });
+    else { const [p, s] = pick(cand); heard.add(p.id + s); addRumor({ text: p.name + "는 정말로 " + s + "이(가) 필요해요", sure: true }); }
+    renderMe(); renderRumors(true);
+  });
+
+  // ── 화면 ──
+  function renderRivals(){
+    $("rivals").innerHTML = players.slice(1).map(p => `
+      <div class="rv" id="rv-${p.id}">
+        <span class="bub${p.said ? " on" : ""}" id="bub-${p.id}">${p.said || ""}</span><span class="hand" id="hand-${p.id}"></span>
+        <div class="av" style="background:${p.def.color}">${p.def.ch}</div>
+        <div class="nm">${p.name}</div>
+        <div class="mn">${won(p.money)}</div>
+        <div class="got">${p.got.map(s => `<span class="chip">${s}</span>`).join("")}</div>
+      </div>`).join("");
+  }
+  function renderMe(){
+    const me = players[0], st = settle(me), have = {}; me.got.forEach(s => have[s] = (have[s] || 0) + 1);
+    $("myMoney").textContent = won(me.money);
+    $("myValue").textContent = won(st.total) + (st.total - me.start >= 0 ? " (+" : " (") + (st.total - me.start) + "만)";
+    $("myOrders").innerHTML = me.orders.map(o => {
+      const d = st.done.includes(o), pt = st.part.find(x => x.o === o), h = Object.assign({}, have);
+      const per = Math.round(o.r / o.f.length * PART);
+      // 아직 없는 생선이 남은 상자(지금 상자 포함)에 다 있는지
+      const missing = o.f.filter(x => !(have[x] > 0)), rest = lots.slice(busy ? li + 1 : li).map(l => l.s);
+      const lost = !d && missing.some(x => !rest.includes(x));
+      return `<div class="order${d ? " done" : ""}${lost ? " lost" : ""}"><span class="t">${d ? "✅ " : lost ? "⚠️ " : ""}${o.t}</span>
+        <span class="items">${o.f.map(s => { const ok = h[s] > 0; if (ok) h[s]--; return `<span class="${ok ? "have" : ""}">${s}</span>`; }).join("")}</span>
+        <span class="r">${d ? "다 모았어요! +" + won(o.r) : "다 모으면 +" + won(o.r)}</span>
+        ${d ? "" : lost ? `<span class="warn">${missing.filter(x => !rest.includes(x)).join("·")}이(가) 더 안 나와서 완성 못 해요. 다른 요리로 1상자당 +${per}만뿐!</span>`
+                        : `<span class="sm">못 모으면 다른 요리로 1상자당 +${per}만뿐${pt ? " (지금 +" + won(pt.v) + ")" : ""}</span>`}</div>`;
+    }).join("");
+    $("myGot").innerHTML = (me.got.length ? "산 생선: " + me.got.map(s => `<span class="chip">${s}</span>`).join("") : "아직 산 생선이 없어요");
+    const needSet = new Set(me.orders.filter(o => !st.done.includes(o)).flatMap(o => o.f.filter(x => !(have[x] > 0))));
+    $("queue").innerHTML = "<b style=\"flex:none;font-weight:600\">앞으로 나올 순서</b> " + lots.map((l, i) => i < li ? "" : `<span class="${i === li ? "cur" : ""}${needSet.has(l.s) ? " need" : ""}">${l.s}</span>`).join("");
+  }
+  function bubble(p, text, ms){
+    const b = $("bub-" + p.id); if (!b) return;
+    // 다음 상자로 넘어갈 때까지 말풍선을 남겨 둠
+    b.textContent = text; b.classList.add("on");
+  }
+  function setRv(p, cls){ const e = $("rv-" + p.id); if (e) { e.classList.remove("in", "out", "win"); if (cls) e.classList.add(cls); } }
+  function hand(p, on){ const e = $("hand-" + p.id); if (e) e.textContent = on ? "✋" : ""; }
+  function say(t, cls){ $("say").textContent = t; $("say").className = "say" + (cls ? " " + cls : ""); }
+  function showAct(which){ ["actSealed","actRaise","actNext"].forEach(id => $(id).hidden = id !== which); }
+  function setPrice(v, dir){ $("price").innerHTML = v + "<small>만</small>"; $("price").className = "price" + (dir ? " " + dir : ""); }
+
+  // ── 경매 시작 ──
+  function startLot(){
+    busy = false;
+    const lot = lots[li], f = FISH[lot.s], left = lots.slice(li + 1), me = players[0];
+    $("lotNo").textContent = "경매 " + (li + 1) + " / " + lots.length;
+    $("fimg").src = "images/fish/f" + f.img + ".jpg"; $("fimg").alt = lot.s;
+    $("fname").textContent = lot.s + " 한 상자";
+    $("fmeta").innerHTML = "오늘 시세 <b>" + won(f.p) + "</b>";
+    const mine = me.orders.filter(o => o.f.includes(lot.s) && !settle(me).done.includes(o));
+    const lastOne = !lots.slice(li + 1).some(l => l.s === lot.s);
+    $("fneed").textContent = mine.length ? "오늘의 요리 '" + mine.map(o => o.t).join("', '") + "'에 필요해요" + (lastOne ? " · 오늘 마지막 " + lot.s + "!" : "") : "내 요리엔 안 쓰는 생선이에요";
+    $("fneed").style.color = mine.length ? "" : "var(--muted)";
+    $("reveal").hidden = true; $("log").innerHTML = ""; $("turn").textContent = "";
+    players.slice(1).forEach(p => { p.max = aiMax(p, lot, lots.slice(li)); setRv(p, null); p.said = ""; p.absent = ev.id === "late" && p.id === "halme" && li < 3; if (p.absent) p.max = 0; });
+    document.querySelectorAll(".bub").forEach(b => b.classList.remove("on"));
+    renderMe();
+    cur = { lot, left };
+    if (ev.id === "gossip" || Math.random() < .45) freeRumor();
+    renderRumors();
+    sealedAuction();
+  }
+
+  // 쪽지 경매: 모두 몰래 한 번 써서 가장 높은 값이 낙찰. 같은 값끼리는 무효
+  function sealedAuction(){
+    const base = FISH[cur.lot.s].p, me = players[0];
+    slipVal = Math.min(me.money, base);
+    $("slipVal").textContent = won(slipVal);
+    $("quick").innerHTML = [["0 (안 사요)", 0], ["시세 " + base, base], ["시세+3", base + 3], ["시세+8", base + 8]]
+      .filter(q => q[1] <= me.money).map(q => `<button type="button" data-v="${q[1]}">${q[0]}</button>`).join("");
+    setPrice("?"); showAct("actSealed");
+    say("먼저 쪽지에 첫 값을 써요. 펼친 뒤엔 차례대로 올려 부를 수 있어요");
+    players.slice(1).forEach(p => {
+      // 첫 쪽지는 속을 덜 드러내게 낮게 (올려 부르기에서 더 갈 수 있음)
+      let f = p.id === "halme" ? (p.def.fav.includes(cur.lot.s) ? .75 : .6) : p.id === "park" ? .55 : .62;
+      let bid = p.max * f * rand(.9, 1.06);
+      // 김사장: 필요 없는 상자엔 들쭉날쭉 (가끔 비싸게 떠안음)
+      if (p.id === "kim" && p.pump) bid = base * rand(.3, 1.0);
+      p.bid = Math.max(0, Math.min(p.money, Math.round(bid)));
+      // 쪽지 쓰기 전 한마디 — 진짜 원할 때 티가 나지만, 김사장은 허세도 부림
+      const wants = p.max > base * 1.2;
+      const line = p.absent ? "(아직 안 왔어요 💤)" : wants || (p.id === "kim" && Math.random() < .55) ? pick(p.def.talk.want) : p.bid === 0 ? "이건 패스" : "(사각사각)";
+      if (p.absent) { p.bid = 0; setTimeout(() => setRv(p, "out"), 50); }
+      p.said = line;
+      setTimeout(() => bubble(p, line), rand(150, 900));
+    });
+  }
+  $("quick").addEventListener("click", e => { const v = e.target.dataset && e.target.dataset.v; if (v == null) return; slipVal = +v; $("slipVal").textContent = won(slipVal); });
+  $("actSealed").addEventListener("click", e => {
+    const d = e.target.dataset && e.target.dataset.d; if (!d) return;
+    slipVal = Math.max(0, Math.min(players[0].money, slipVal + +d)); $("slipVal").textContent = won(slipVal);
+  });
+  function submitSlip(v){
+    if (!cur || busy) return;
+    busy = true; showAct(null);
+    const bids = [{ p: players[0], v }].concat(players.slice(1).map(p => ({ p, v: p.bid })));
+    // 가장 높은 값이 낙찰. 같은 값이면 돈이 적은 사람이 가져감 (뒤처진 사람에게 기회)
+    const valid = bids.filter(b => b.v > 0);
+    const top = valid.length ? valid.reduce((a, b) => b.v > a.v || (b.v === a.v && b.p.money < a.p.money) ? b : a) : null;
+    const tied = top ? valid.filter(b => b.v === top.v && b !== top) : [];
+    $("reveal").innerHTML = bids.map((b, i) => `<div class="flip" data-i="${i}">${b.p.id === "me" ? "나" : b.p.def.ch}<b>?</b></div>`).join("");
+    $("reveal").hidden = false; say("쪽지를 펼쳐요…");
+    const cells = [...$("reveal").children];
+    bids.forEach((b, i) => setTimeout(() => {
+      const c = cells[i]; c.querySelector("b").textContent = b.v ? b.v : "−"; c.classList.remove("flip"); play(S.tick);
+      if (i === bids.length - 1) setTimeout(() => {
+        cells.forEach((c, k) => { const bb = bids[k]; if (tied.includes(bb)) c.classList.add("tie"); if (bb === top) c.classList.add("top"); });
+        if (!top) { busy = false; return sold(null, 0, ""); }
+        setPrice(top.v, "up");
+        // 올려 부르기: 쪽지에 0보다 큰 값을 쓴 사람만 참가, 앞선 사람 다음부터 차례
+        cur.hi = top.v; cur.holder = top.p;
+        cur.active = bids.filter(b => b.v > 0).map(b => b.p);
+        const order = players.filter(p => cur.active.includes(p));
+        const k = order.indexOf(top.p); cur.order = order.slice(k + 1).concat(order.slice(0, k + 1));
+        cur.ti = 0; cur.passes = 0;
+        logPush((top.p.id === "me" ? "나" : top.p.def.ch) + " " + top.v + " (쪽지 1등)", "up");
+        say("올려 부르기! 차례대로 값을 더 올리거나 포기해요");
+        busy = false; setTimeout(nextTurn, 500);
+      }, 450);
+    }, 380 * (i + 1)));
+  }
+  $("slipBtn").addEventListener("click", () => submitSlip(slipVal));
+  $("slipPass").addEventListener("click", () => submitSlip(0));
+
+  // ── 올려 부르기 (턴제) ──
+  function logPush(t, cls){ const e = document.createElement("span"); e.textContent = t; if (cls) e.className = cls; $("log").appendChild(e); }
+  function nextTurn(){
+    // 앞선 사람 말고 남은 사람이 없으면 낙찰
+    const others = cur.active.filter(p => p !== cur.holder);
+    if (!others.length) { $("turn").textContent = ""; return sold(cur.holder, cur.hi, ""); }
+    let p = cur.order[cur.ti % cur.order.length]; cur.ti++;
+    if (!cur.active.includes(p) || p === cur.holder) return nextTurn();
+    if (p.id === "me") {
+      $("turn").textContent = "내 차례! 지금 최고 " + won(cur.hi) + " (" + (cur.holder.id === "me" ? "나" : cur.holder.name) + ")";
+      showAct("actRaise");
+      document.querySelectorAll("#actRaise [data-r]").forEach(b => b.disabled = players[0].money < cur.hi + +b.dataset.r);
+      return;
+    }
+    $("turn").textContent = p.name + " 생각 중…"; showAct(null);
+    setTimeout(() => aiTurn(p), ROUND_STEP);
+  }
+  function aiTurn(p){
+    const base = FISH[cur.lot.s].p;
+    let lim = p.max;
+    // 김사장: 필요 없어도 남이 끝까지 있을 땐 값을 올려 놓음 (혼자 떠안을 위험)
+    if (p.id === "kim" && p.pump) lim = Math.max(lim, Math.round(base * rand(.9, 1.4)));
+    const step = p.id === "park" ? 1 : p.id === "halme" ? (p.def.fav.includes(cur.lot.s) ? 3 : 1) : pick([1, 2, 3]);
+    const to = cur.hi + step;
+    if (to <= lim && to <= p.money) {
+      cur.hi = to; cur.holder = p; setPrice(to, "up"); play(S.tick);
+      logPush(p.def.ch + " " + to + " ↑", "up");
+      if (Math.random() < .5) bubble(p, pick(p.def.talk.want)), p.said = $("bub-" + p.id).textContent;
+    } else {
+      cur.active = cur.active.filter(x => x !== p); setRv(p, "out");
+      logPush(p.def.ch + " 포기", "fold");
+      bubble(p, pick(p.def.talk.drop)); p.said = $("bub-" + p.id).textContent;
+    }
+    nextTurn();
+  }
+  document.querySelector("#actRaise .raise").addEventListener("click", e => {
+    const r = e.target.dataset && e.target.dataset.r; if (!r || !cur) return;
+    const to = cur.hi + +r; if (players[0].money < to) return;
+    cur.hi = to; cur.holder = players[0]; setPrice(to, "up"); play(S.tick); logPush("나 " + to + " ↑", "up");
+    showAct(null); nextTurn();
+  });
+  $("foldBtn").addEventListener("click", () => {
+    if (!cur) return;
+    cur.active = cur.active.filter(x => x !== players[0]); logPush("나 포기", "fold");
+    showAct(null); nextTurn();
+  });
+
+  // ── 낙찰 ──
+  function sold(p, price, pre){
+    busy = true; pre = pre || "";
+    const lot = cur.lot, base = FISH[lot.s].p;
+    if (!p) { say(pre + "아무도 못 사서 유찰됐어요", ""); play(S.lose); }
+    else {
+      p.money -= price; p.got.push(lot.s); p.paid.push(price);
+      if (p.id === "me") {
+        const d = price - base;
+        say(pre + "낙찰! " + lot.s + " " + won(price) + (d > 3 ? " — 시세보다 " + d + "만 비싸게 샀어요" : d < -2 ? " — 시세보다 " + (-d) + "만 싸게 샀어요!" : ""), "ok"); play(S.win);
+      } else {
+        setRv(p, "win");
+        p.said = pick(p.def.talk.win);
+        say(pre + p.name + " 낙찰 — " + won(price), ""); play(S.lose);
+      }
+    }
+    renderRivals(); if (p && p.id !== "me") setRv(p, "win");
+    renderMe(); renderRumors(); showAct("actNext"); $("turn").textContent = "";
+    $("nextBtn").textContent = li < lots.length - 1 ? "다음 상자" : "결과 보기";
+    $("nextBtn").focus({ preventScroll: true });
+  }
+  $("nextBtn").addEventListener("click", () => { li++; if (li < lots.length) startLot(); else finish(); });
+
+  // ── 결과 ──
+  function finish(){
+    play(S.end);
+    const res = players.map(p => ({ p, ...settle(p) })).sort((a, b) => b.total - a.total);
+    const myRank = res.findIndex(r => r.p.id === "me") + 1, mine = res.find(r => r.p.id === "me");
+    $("fTitle").textContent = myRank === 1 ? "오늘 위판장의 승자는 나!" : myRank + "등으로 장을 마쳤어요";
+    $("fBig").textContent = (mine.total - mine.p.start >= 0 ? "+" : "") + (mine.total - mine.p.start) + "만 원";
+    $("fLine").textContent = "남은 돈 " + won(mine.p.money) + " + 요리로 번 돈 " + won(mine.val) + " · 완성한 요리 " + mine.done.length + "가지";
+    $("rank").innerHTML = res.map((r, i) => `
+      <div class="rk${r.p.id === "me" ? " me1" : ""}">
+        <span class="no">${i + 1}</span>
+        <div class="av" style="background:${r.p.id === "me" ? "var(--lamp)" : r.p.def.color}">${r.p.id === "me" ? "나" : r.p.def.ch}</div>
+        <div class="who"><b>${r.p.name}</b><small>${r.p.orders.map(o => (r.done.includes(o) ? "✅" : "🔄") + o.t).join(" · ")}</small></div>
+        <div class="tot">${won(r.total)}<small>${r.total - r.p.start >= 0 ? "+" : ""}${r.total - r.p.start}만</small></div>
+      </div>`).join("");
+    const kim = players.find(p => p.id === "kim"), stuck = kim.got.filter(s => !kim.orders.some(o => o.f.includes(s)));
+    const halme = players.find(p => p.id === "halme");
+    const tips = [];
+    if (stuck.length) tips.push("얌체 김사장은 필요도 없는 " + stuck.join("·") + "을(를) 허세 부리다 떠안았어요.");
+    tips.push("홍어 할매는 홍어·민어·준치라면 값을 높게 써요.");
+    tips.push("꼼꼼 박씨는 자기에게 필요한 생선만 노려요.");
+    const fakes = rumors.filter(r => r.fake).length;
+    if (fakes) tips.push("공짜 소문 중 " + fakes + "개는 김사장이 퍼뜨린 헛소문이었어요.");
+    $("fReveal").textContent = "오늘의 사건: " + ev.t + ". 상인들 속사정: " + tips.join(" ");
+    $("play").hidden = true; $("final").hidden = false; $("shareMsg").textContent = ""; $("shareBox").hidden = true;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    finish.last = { rank: myRank, gain: mine.total - mine.p.start };
+  }
+  $("startBtn").addEventListener("click", newGame);
+  $("againBtn").addEventListener("click", newGame);
+  $("sound").addEventListener("click", () => { soundOn = !soundOn; $("sound").textContent = soundOn ? "소리 끄기" : "소리 켜기"; });
+
+  const GAME_URL = "https://hangunada-create.github.io/fishgame/12/";
+  $("brag").addEventListener("click", async () => {
+    const l = finish.last || { rank: 4, gain: 0 };
+    const text = ["🐟 새벽 위판장 경매", "AI 상인 셋을 상대로 " + l.rank + "등! 오늘 장사 " + (l.gain >= 0 ? "+" : "") + l.gain + "만 원", "얌체 김사장한테 안 당할 자신 있어?", "👉 " + GAME_URL].join("\n");
+    const touch = window.matchMedia && matchMedia("(pointer:coarse)").matches;
+    if (touch && navigator.share) { try { await navigator.share({ text }); $("shareMsg").textContent = "자랑 완료!"; return; } catch(e){ if (e && e.name === "AbortError") return; } }
+    try { await navigator.clipboard.writeText(text); $("shareMsg").textContent = "복사했어요. 카톡방에 붙여 넣어 보세요!"; }
+    catch(e){ const b = $("shareBox"); b.value = text; b.hidden = false; b.select(); $("shareMsg").textContent = "아래 문구를 길게 눌러 복사해 주세요."; }
+  });
+
+  if (location.hash === "#autotest") window.__k = {
+    info: () => ({ li, type: cur && cur.lot.type, s: cur && cur.lot.s, money: players.map(p => p.money), got: players.map(p => p.got.length), busy, meIn: cur && cur.meIn }),
+    worthMe: () => cur ? Math.round(worth(players[0], cur.lot.s, lots.slice(li))) : 0,
+    price: () => cur && cur.price,
+    state: () => ({ raise: !$("actRaise").hidden, slip: !$("actSealed").hidden, next: !$("actNext").hidden, hi: cur && cur.hi, ev: ev && ev.id, lots: lots.length })
+  };
+})();
+</script>
+
+</body>
+</html>
