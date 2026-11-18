@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>216, 꼬질이를 잡아라</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="이음수산 생선을 물고 달아난 길고양이 꼬질이! 216고양이가 몰래 따라가 덮쳐서 생선을 되찾는 가다 서기 게임. 이상한생선가게 게임 13탄">
+<meta property="og:type" content="website">
+<meta property="og:title" content="216, 꼬질이를 잡아라 · 이상한생선가게 게임 13탄">
+<meta property="og:description" content="생선 도둑 길고양이가 뒤돌아볼 땐 얼음! 미끄러운 위판장에서 몰래 다가가 덮쳐 보세요.">
+<meta property="og:url" content="https://hangunada-create.github.io/fishgame/13/">
+<meta property="og:image" content="https://hangunada-create.github.io/fishgame/13/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+/* 레이아웃: 위에 판 정보, 가운데 가로로 긴 위판장 화면, 아래 큰 '꾹 누르기' 판과 덮치기 버튼. 216의 청록과 새벽 하늘 */
+:root{
+  --paper:#f2f0ea; --card:#fffdf8; --ink:#1f2a37; --muted:#737d8c; --line:#e1dbcf;
+  --acc:#14917f; --acc-soft:#d7efe9; --warn:#e2553f; --gold:#e9a825; --shadow:rgba(31,42,55,.10);
+  --body:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#131a20;--card:#1c252e;--ink:#e8edf1;--muted:#9aa5b1;--line:#2d3844;--acc:#3cc2ad;--acc-soft:#173a35;--warn:#ff7a66;--gold:#f3bf4a;--shadow:rgba(0,0,0,.4);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#131a20;--card:#1c252e;--ink:#e8edf1;--muted:#9aa5b1;--line:#2d3844;--acc:#3cc2ad;--acc-soft:#173a35;--warn:#ff7a66;--gold:#f3bf4a;--shadow:rgba(0,0,0,.4);color-scheme:dark}
+
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));padding-block:16px 36px;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+header{text-align:center;display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--muted)}
+h1{margin:0;font-size:clamp(26px,7.4vw,36px);letter-spacing:-.02em;word-break:keep-all}
+h1 em{font-style:normal;color:var(--acc)}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.panel{background:var(--card);border-radius:18px;box-shadow:0 8px 24px var(--shadow);padding:18px 16px;display:flex;flex-direction:column;gap:12px}
+.panel h2{margin:0;font-size:18px;word-break:keep-all}
+.panel p{margin:0;color:var(--muted);font-size:14px;text-wrap:pretty;word-break:keep-all}
+.rules{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:6px;word-break:keep-all}
+.rules b{color:var(--acc)}
+.rules .w{color:var(--warn)}
+.btn{font:inherit;font-size:17px;font-weight:700;border:0;border-radius:14px;padding:13px 18px;background:var(--acc);color:#fff;cursor:pointer;width:100%}
+.btn.ghost{background:none;border:1.5px solid var(--line);color:var(--ink);font-weight:600}
+.btn:disabled{opacity:.4;cursor:default}
+button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.cast{width:100%;display:block;border-radius:12px;background:#dfeef6}
+
+/* 플레이 */
+.hud{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px}
+.hud .st{font-weight:700}
+.hud .pill{background:var(--card);border-radius:999px;padding:3px 10px;box-shadow:0 2px 8px var(--shadow);font-variant-numeric:tabular-nums;white-space:nowrap}
+.track{position:relative;height:16px;border-radius:999px;background:var(--line);margin:2px 8px 0}
+.track i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:2px solid var(--card)}
+.track .me{background:var(--acc);z-index:2}
+.track .kz{background:#7d838b;z-index:1}
+.track .end{position:absolute;right:-8px;left:auto;margin:0;top:-3px;width:auto;height:auto;border:0;font-size:15px;line-height:1}
+.track .wetbar{position:absolute;top:4px;height:8px;border-radius:4px;background:rgba(80,150,210,.45)}
+.stagebox{position:relative;border-radius:16px;box-shadow:0 8px 24px var(--shadow);touch-action:none}
+#cv{display:block;width:100%;touch-action:none;border-radius:16px}
+.hint{min-height:44px;text-align:center;font-size:14.5px;font-weight:700;word-break:keep-all;display:flex;align-items:center;justify-content:center;padding:0 6px}
+.hint.w{color:var(--warn)}
+.hint.ok{color:var(--acc)}
+.controls{display:grid;grid-template-columns:1fr 112px;gap:10px}
+.pad{font:inherit;border:0;border-radius:18px;min-height:96px;background:var(--acc);color:#fff;font-size:17px;font-weight:800;cursor:pointer;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 6px 0 #0c6b5d;transition:transform .05s,box-shadow .05s}
+.pad small{font-weight:600;font-size:12px;opacity:.85}
+.pad.on{transform:translateY(5px);box-shadow:0 1px 0 #0c6b5d}
+.pounce{font:inherit;border:0;border-radius:18px;background:var(--gold);color:#3a2a00;font-size:16px;font-weight:800;cursor:pointer;touch-action:manipulation;box-shadow:0 6px 0 #b57f0e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1.2}
+.pounce small{font-size:11px;font-weight:600}
+.pounce:disabled{background:var(--line);color:var(--muted);box-shadow:0 6px 0 var(--line);cursor:default}
+.pounce.ready{animation:glow .6s ease-in-out infinite alternate}
+@keyframes glow{to{box-shadow:0 6px 0 #b57f0e,0 0 0 6px rgba(233,168,37,.35)}}
+.keys{font-size:12px;color:var(--muted);text-align:center}
+@media (hover:none){.keys{display:none}}
+
+/* 판 사이 오버레이 */
+.ov{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(19,26,32,.35);border-radius:16px}
+.ov .card{background:var(--card);border-radius:16px;padding:14px 16px;max-width:330px;width:100%;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.25);text-align:center;animation:pop .25s ease-out}
+.ov h3{margin:0;font-size:18px;word-break:keep-all}
+.ov p{margin:0;color:var(--muted);font-size:13.5px;word-break:keep-all}
+.ov .stars{font-size:22px;color:var(--gold);letter-spacing:2px}
+.ov .btn{padding:10px 14px;font-size:16px}
+.fishrow{display:flex;flex-wrap:wrap;justify-content:center;gap:4px}
+.fishrow span{font-size:11.5px;background:var(--acc-soft);border-radius:8px;padding:2px 6px}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+
+/* 결과 */
+.panel .big{font-size:30px;font-weight:800;letter-spacing:-.02em;text-align:center;margin:0;color:var(--acc)}
+.rank{text-align:center;font-weight:700}
+.slist{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.slist div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0}
+.slist .s{color:var(--gold);letter-spacing:1px}
+.dex{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dex div{background:var(--paper);border-radius:12px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;font-size:12px;gap:2px}
+.dex img{width:90%;height:38px;object-fit:contain}
+.dex b{font-size:12.5px}
+.quote{background:var(--acc-soft);border-radius:14px;padding:12px 14px;font-size:14.5px;line-height:1.6;word-break:keep-all}
+.quote b{color:var(--acc)}
+.site{display:block;text-align:center;color:var(--acc);font-weight:700;text-decoration:none;font-size:14px}
+.btns{display:flex;gap:8px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:999px;font-size:13px;z-index:9}
+@media (prefers-reduced-motion:reduce){.pounce.ready{animation:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">이상한생선가게 게임 13탄</div>
+    <h1>216, <em>꼬질이</em>를 잡아라</h1>
+    <p class="sub">생선 도둑 길고양이를 몰래 따라잡기</p>
+  </header>
+
+  <section class="panel" id="intro">
+    <canvas class="cast" id="castCv" aria-label="216고양이와 길고양이 꼬질이"></canvas>
+    <h2>못돼 보이는 길고양이 꼬질이가 이음수산 생선을 물고 달아났어요!</h2>
+    <ul class="rules">
+      <li><b>꾹 누르면</b> 216이 달리고, <b>손을 떼면</b> 주르륵 미끄러지다 멈춰요.</li>
+      <li>멈추면 216이 <b>📦 이음수산 택배 상자</b>를 뒤집어써요. 꼬질이 눈엔 그냥 상자예요.</li>
+      <li>꼬질이가 뒤돌아볼 때 <b class="w">움직이고 있거나 상자를 다 못 썼으면</b> 들켜요. 꼬질이가 놀라 멀리 달아나요.</li>
+      <li>돌아보기 전엔 꼭 <b>꼬리가 바짝 서요</b>. 그때 떼야 해요. <b class="w">물바닥</b>에선 더 미끄러지니 미리 떼요.</li>
+      <li>꼬질이가 앉아서 <b>그루밍</b>을 하면 눈을 감아요. 그때가 마음껏 달릴 기회!</li>
+      <li>돌아보기 직전에 딱 멈춰 상자를 쓰면 <b>아슬아슬!</b> 연속으로 노려 봐요.</li>
+      <li>꼬질이가 앞의 <b>초록 띠</b> 안에 들어오면 <b>⤴ 덮치기!</b> 꼬질이가 안 볼 때 누르면 꼭 잡혀요. 가운데 발자국에 맞추면 <b>🎯 완벽한 덮치기</b>.</li>
+      <li>꼬질이가 <b class="w">골목</b>까지 가면 놓쳐요. 딱 한 판! 덜 들키고 빨리 잡을수록 좋아요.</li>
+    </ul>
+    <button class="btn" id="startBtn">쫓아가기</button>
+  </section>
+
+  <section id="play" hidden style="display:flex;flex-direction:column;gap:8px">
+    <div class="hud">
+      <span class="st" id="hudStage">1판</span>
+      <span style="display:flex;gap:6px">
+        <span class="pill" id="hudSeen">👀 0</span>
+        <span class="pill" id="hudLoad">🚪 0m</span>
+      </span>
+    </div>
+    <div class="track" id="track"><i class="kz" id="tkKz"></i><i class="me" id="tkMe"></i><span class="end">🚪</span></div>
+    <div class="stagebox">
+      <canvas id="cv" aria-label="게임 화면"></canvas>
+      <div class="ov" id="ov" hidden><div class="card" id="ovCard"></div></div>
+    </div>
+    <div class="hint" id="hint" aria-live="polite">꾹 눌러서 따라가요</div>
+    <div class="controls">
+      <button class="pad" id="pad">꾹 누르면 달리기<small>떼면 미끄러지며 멈춰요</small></button>
+      <button class="pounce" id="pounceBtn" disabled>⤴ 덮치기<small id="pounceSub">가까이 가요</small></button>
+    </div>
+    <div class="keys">키보드: 스페이스(달리기) · ↑(덮치기)</div>
+  </section>
+
+  <section class="panel" id="result" hidden>
+    <div class="eyebrow" style="text-align:center">216 몰래 잡기 결과</div>
+    <p class="big" id="rTotal"></p>
+    <div class="rank" id="rRank"></div>
+    <div class="slist" id="rStages"></div>
+    <div class="dex" id="rDex"></div>
+    <div class="quote">216이 꼬질이에게 밴댕이 한 마리를 툭 던져 줬어요.<br><b>"훔치지 말고 와서 먹어."</b><br>— make life yummy</div>
+    <div class="btns">
+      <button class="btn" id="shareBtn">자랑하기</button>
+      <button class="btn ghost" id="againBtn">다시 하기</button>
+    </div>
+    <a class="site" href="https://ieumfish.co.kr" target="_blank" rel="noopener">진짜 생선은 이음수산에서 · ieumfish.co.kr →</a>
+  </section>
+</div>
+
+<script>
+(() => {
+  /* ---------- 데이터 ---------- */
+  const FISH = {
+    광어:{img:1,p:12,w:3}, 민어:{img:2,p:15,w:3}, 밴댕이:{img:3,p:5,w:1}, 병어:{img:4,p:10,w:2}, 삼치:{img:5,p:8,w:2}, 숭어:{img:6,p:7,w:2},
+    붕장어:{img:7,p:10,w:2}, 웅어:{img:8,p:8,w:1}, 전어:{img:9,p:6,w:1}, 준치:{img:10,p:9,w:2}, 참돔:{img:11,p:14,w:3}, 홍어:{img:12,p:16,w:4}
+  };
+  // 한 판: 꼬질이가 골목에 가까워질수록 점점 예민해진다
+  // 216이 가까워질수록(경계심) 꼬리 속임수가 나오고 꼬리 신호도 짧아짐. 바닥엔 물바닥
+  const STAGES = [
+    { name:"새벽 위판장 추격", len:3600, speed:70, walk:[1.8,3.2], warn:1.0, warnEnd:.8, look:[1.0,1.7],
+      wet:[[800,1100],[1450,1650],[2050,2250]], boxes:[], carts:[], ground:[], steal:"홍어",
+      fake:.38, fakeFrom:.25, bell:0, bellFrom:2,
+      story:"못돼 보이는 길고양이 꼬질이가 이음수산 홍어를 물고 달아났어요! 골목에 숨기 전에 몰래 다가가 덮쳐요.",
+      tip:"가까이 갈수록 꼬질이가 예민해져요. 🦊 꼬리만 세우는 속임수도 써요.<br>길에는 💧 물바닥이 있어요." }
+  ];
+  const H = 300, VW = 560, GY = 246;
+  let Z = 1, vw = VW;   // 꼬질이가 멀어지면 화면을 넓혀 둘 다 보이게
+  const ACC = 280, VMAX = 88, FR_DRY = 300, FR_WET = 118;
+  const J = 110, JD = .5, CATCH = 32, FLEE = 90, START_GAP = 400;
+  const BOX_W = 64, CART_W = 124;
+
+  const IMG = {};
+  Object.values(FISH).forEach(f => { const im = new Image(); im.src = `images/fish/t${f.img}.png`; IMG[f.img] = im; });
+  const fimg = s => IMG[FISH[s].img];
+
+  const $ = id => document.getElementById(id);
+  const rand = (a,b) => a + Math.random()*(b-a);
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const AUTOTEST = location.hash.includes("autotest");
+
+  /* ---------- 소리 ---------- */
+  let AC = null;
+  function ac(){ if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(AC && AC.state==="suspended") AC.resume(); return AC; }
+  const SND = {};
+  ["clear","fail","match","flip"].forEach(n => { const a = new Audio(`sound/${n}.mp3`); a.preload = "auto"; SND[n] = a; });
+  function play(n, vol=.7){ if(AUTOTEST) return; const a = SND[n]; if(!a) return; try{ a.pause(); a.currentTime = 0; a.volume = vol; a.play().catch(()=>{}); }catch(e){} }
+  function stopSnd(n){ const a = SND[n]; if(a){ try{ a.pause(); }catch(e){} } }
+  function hiss(){ const c = ac(); if(!c || AUTOTEST) return;
+    const len = .45, b = c.createBuffer(1, c.sampleRate*len, c.sampleRate), d = b.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 1.5);
+    const s = c.createBufferSource(); s.buffer = b; const f = c.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 2500;
+    const g = c.createGain(); g.gain.value = .35; s.connect(f); f.connect(g); g.connect(c.destination); s.start(); }
+  function bellSnd(){ const c = ac(); if(!c || AUTOTEST) return; const t = c.currentTime;
+    [0,.28].forEach(dt => [880,1320,2210].forEach((fq,i) => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = fq; o.type = "sine";
+      g.gain.setValueAtTime(.18/(i+1), t+dt); g.gain.exponentialRampToValueAtTime(.001, t+dt+.9); o.connect(g); g.connect(c.destination); o.start(t+dt); o.stop(t+dt+1); })); }
+  function tick(fq=660, len=.08, vol=.12){ const c = ac(); if(!c || AUTOTEST) return; const t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+    o.type = "triangle"; o.frequency.setValueAtTime(fq, t); o.frequency.exponentialRampToValueAtTime(fq*1.6, t+len);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t+len+.05); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+len+.08); }
+
+  /* ---------- 그리기: 캐릭터 ---------- */
+  const OUT = "#2b3442";
+  function ell(g,x,y,rx,ry){ g.beginPath(); g.ellipse(x,y,rx,ry,0,0,Math.PI*2); }
+  function rr(g,x,y,w,h,r){ g.beginPath(); g.roundRect ? g.roundRect(x,y,w,h,r) : g.rect(x,y,w,h); }
+
+  // 216: 흰 고양이, 청록 모자(노란 점), 청록 띠에 216 이름표. 오른쪽을 봄
+  function draw216(g, x, y, o={}){
+    const pose = o.pose || "idle", ph = o.ph || 0;
+    g.save(); g.translate(x, y);
+    g.fillStyle = "rgba(0,0,0,.16)"; ell(g,0,1,25,5); g.fill();
+    if(o.lift) g.translate(0, -o.lift);
+    const bob = pose==="run" ? Math.abs(Math.sin(ph))*3 : 0;
+    g.translate(0, -bob);
+    if(pose==="crouch"||pose==="pick") g.scale(1.06,.9);
+    g.lineJoin = "round"; g.lineCap = "round";
+    // 꼬리
+    const tw = pose==="run" ? Math.sin(ph*.5)*4 : Math.sin((o.t||0)*2)*3;
+    g.strokeStyle = OUT; g.lineWidth = 10; g.beginPath(); g.moveTo(-18,-20); g.quadraticCurveTo(-40,-22+tw,-34,-44+tw); g.stroke();
+    g.strokeStyle = "#fff"; g.lineWidth = 6; g.stroke();
+    g.fillStyle = "#14917f"; ell(g,-34,-44+tw,4.5,4.5); g.fill(); g.lineWidth = 2; g.strokeStyle = OUT; g.stroke();
+    // 다리
+    const legs = [[-15,0],[-7,Math.PI],[9,Math.PI],[16,0]];
+    legs.forEach(([px,off]) => {
+      let a = 0;
+      if(pose==="run") a = Math.sin(ph+off)*.7;
+      else if(pose==="slide") a = px>0 ? -.55 : .55;
+      else if(pose==="jump") a = px>0 ? -.9 : .9;
+      g.save(); g.translate(px,-12); g.rotate(a); rr(g,-3.6,0,7.2,13,3.6); g.fillStyle = "#fff"; g.fill(); g.lineWidth = 2; g.strokeStyle = OUT; g.stroke(); g.restore();
+    });
+    // 몸
+    ell(g,0,-21,22,13); g.fillStyle = "#fff"; g.fill(); g.lineWidth = 2.2; g.strokeStyle = OUT; g.stroke();
+    // 등짐 생선
+    if(o.load && o.load.length){
+      o.load.forEach((s,i) => { const im = fimg(s); if(!im.complete || !im.naturalWidth) return;
+        const w = 30, h = w*im.naturalHeight/im.naturalWidth; g.save(); g.translate(-4+(i%2)*4, -34 - i*6); g.rotate(-.08 + (i%2)*.14);
+        g.drawImage(im, -w/2, -h/2, w, h); g.restore(); });
+    }
+    // 띠와 이름표
+    g.save(); ell(g,0,-21,22,13); g.clip();
+    g.fillStyle = "#14917f"; g.beginPath(); g.moveTo(-2,-36); g.lineTo(6,-36); g.lineTo(16,-6); g.lineTo(8,-6); g.closePath(); g.fill(); g.restore();
+    rr(g,5,-22,13,9,2); g.fillStyle = "#fff"; g.fill(); g.lineWidth = 1.2; g.strokeStyle = OUT; g.stroke();
+    g.fillStyle = "#d9901a"; g.font = "bold 6.5px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("216", 11.5, -17.3);
+    // 머리
+    const hx = 17, hy = -37;
+    // 귀
+    g.lineWidth = 2; g.strokeStyle = OUT;
+    [[4,-46, 7,-61, 15,-50],[20,-50, 30,-60, 30,-44]].forEach((p,i) => {
+      g.beginPath(); g.moveTo(p[0]+hx-17,p[1]); g.lineTo(p[2]+hx-17,p[3]); g.lineTo(p[4]+hx-17,p[5]); g.closePath(); g.fillStyle = "#fff"; g.fill(); g.stroke();
+      g.beginPath(); g.moveTo(p[0]+hx-17+2.5,p[1]-1.5); g.lineTo(p[2]+hx-17,p[3]+4); g.lineTo(p[4]+hx-17-2.5,p[5]); g.closePath(); g.fillStyle = "#14917f"; g.fill();
+    });
+    ell(g,hx,hy,15.5,14.5); g.fillStyle = "#fff"; g.fill(); g.lineWidth = 2.2; g.stroke();
+    // 모자
+    g.beginPath(); g.moveTo(hx-10,hy-11); g.lineTo(hx-8,hy-25); g.lineTo(hx+9,hy-25); g.lineTo(hx+11,hy-11); g.closePath();
+    g.fillStyle = "#14917f"; g.fill(); g.lineWidth = 2; g.stroke();
+    ell(g,hx,hy-11,14,3.4); g.fillStyle = "#14917f"; g.fill(); g.stroke();
+    g.fillStyle = "#f4c430"; [-6,0,6].forEach(dx => { ell(g,hx+dx,hy-14.5,2.6,2.3); g.fill(); });
+    g.fillStyle = "#fff"; g.beginPath(); g.moveTo(hx-3,hy-21); g.quadraticCurveTo(hx+2,hy-24,hx+5,hy-21); g.quadraticCurveTo(hx+2,hy-18,hx-3,hy-21); g.fill();
+    // 얼굴
+    g.strokeStyle = OUT; g.lineWidth = 1.8;
+    const surprised = pose==="stun";
+    [[hx-6,hy+1],[hx+6,hy+1]].forEach(([ex,ey]) => {
+      if(surprised){ ell(g,ex,ey,2.4,2.8); g.fillStyle = OUT; g.fill(); }
+      else { g.beginPath(); g.moveTo(ex-4,ey); g.lineTo(ex+4,ey); g.moveTo(ex-3.5,ey-2.6); g.lineTo(ex+3.5,ey-2); g.moveTo(ex-3.5,ey+2.6); g.lineTo(ex+3.5,ey+2); g.stroke(); }
+    });
+    g.fillStyle = "#f2a7a7"; ell(g,hx-10,hy+6,2.6,1.6); g.fill(); ell(g,hx+10,hy+6,2.6,1.6); g.fill();
+    g.fillStyle = "#e86a6a"; g.beginPath(); g.moveTo(hx-1.6,hy+5); g.lineTo(hx+1.6,hy+5); g.lineTo(hx,hy+7); g.closePath(); g.fill();
+    if(o.mouth==="open" || surprised){ g.fillStyle = "#d84a4a"; ell(g,hx,hy+10,2.6,2.2); g.fill(); }
+    else { g.beginPath(); g.moveTo(hx-3,hy+8.5); g.quadraticCurveTo(hx-1.5,hy+10.5,hx,hy+8.5); g.quadraticCurveTo(hx+1.5,hy+10.5,hx+3,hy+8.5); g.stroke(); }
+    g.restore();
+  }
+
+  // 꼬질이: 꼬질한 회색 길고양이. 찢어진 귀, 짝눈, 흉터, 성난 눈썹
+  function drawStray(g, x, y, o={}){
+    const pose = o.pose || "walk", ph = o.ph || 0, dir = o.dir || 1;
+    g.save(); g.translate(x, y);
+    g.fillStyle = "rgba(0,0,0,.16)"; ell(g,0,1,25,5); g.fill();
+    g.scale(dir, 1);
+    const bob = (pose==="walk"||pose==="flee") ? Math.abs(Math.sin(ph))*2 : 0;
+    g.translate(0,-bob);
+    if(pose==="sit") g.translate(0, 3);
+    g.lineJoin = "round"; g.lineCap = "round";
+    const fur = "#8d9298", dark = "#5e6369";
+    // 꼬리
+    g.strokeStyle = OUT; g.lineWidth = 9;
+    g.beginPath();
+    if(pose==="warn"||pose==="look"){ g.moveTo(-18,-20); g.lineTo(-24,-36); g.lineTo(-21,-50); g.lineTo(-26,-64); }
+    else if(pose==="sit"){ g.moveTo(-16,-8); g.quadraticCurveTo(-32,-2,-36,-12); }
+    else { const w = Math.sin(ph*.5)*4; g.moveTo(-18,-18); g.quadraticCurveTo(-34,-12+w,-40,-24+w); g.lineTo(-44,-20+w); }
+    g.stroke(); g.strokeStyle = fur; g.lineWidth = 5; g.stroke();
+    if(pose==="warn"||pose==="look"){ // 곤두선 털
+      g.strokeStyle = OUT; g.lineWidth = 1.6; g.beginPath();
+      for(let i=0;i<5;i++){ const ty = -34 - i*7; g.moveTo(-22,ty); g.lineTo(-29,ty-3); g.moveTo(-22,ty); g.lineTo(-15,ty-3); } g.stroke();
+    }
+    // 다리
+    const legs = [[-14,0],[-6,Math.PI],[9,Math.PI],[15,0]];
+    legs.forEach(([px,off]) => {
+      let a = 0;
+      if(pose==="walk") a = Math.sin(ph+off)*.45; else if(pose==="flee") a = Math.sin(ph+off)*.9;
+      if(pose==="sit" && px<0) return;
+      g.save(); g.translate(px,-12); g.rotate(a); rr(g,-3.4,0,6.8,13,3); g.fillStyle = fur; g.fill(); g.lineWidth = 2; g.strokeStyle = OUT; g.stroke(); g.restore();
+    });
+    // 몸 (등이 살짝 굽음, 꼬질한 털 뭉치)
+    g.beginPath(); g.moveTo(-22,-20); g.quadraticCurveTo(-20,-36,0,-35); g.quadraticCurveTo(20,-35,22,-22);
+    g.quadraticCurveTo(22,-8,8,-8); for(let i=0;i<5;i++){ g.lineTo(5-i*6,-5 - (i%2)*3); } g.quadraticCurveTo(-24,-8,-22,-20); g.closePath();
+    g.fillStyle = fur; g.fill(); g.lineWidth = 2.2; g.strokeStyle = OUT; g.stroke();
+    g.strokeStyle = dark; g.lineWidth = 2.4; [[-12,-33],[-4,-35],[4,-34]].forEach(([sx,sy]) => { g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx+3,sy+8); g.stroke(); });
+    g.fillStyle = "#b9a58f"; ell(g,-8,-24,4,3); g.fill(); // 얼룩
+    // 머리
+    const hx = 18, hy = -35;
+    g.lineWidth = 2; g.strokeStyle = OUT;
+    // 찢어진 왼쪽 귀
+    g.beginPath(); g.moveTo(hx-12,hy-7); g.lineTo(hx-11,hy-16); g.lineTo(hx-8,hy-13); g.lineTo(hx-8,hy-22); g.lineTo(hx-1,hy-12); g.closePath(); g.fillStyle = fur; g.fill(); g.stroke();
+    // 오른쪽 귀
+    g.beginPath(); g.moveTo(hx+2,hy-12); g.lineTo(hx+11,hy-21); g.lineTo(hx+12,hy-6); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = "#c79a95"; g.beginPath(); g.moveTo(hx+4.5,hy-11); g.lineTo(hx+10,hy-16.5); g.lineTo(hx+10.5,hy-8); g.closePath(); g.fill();
+    ell(g,hx,hy,14,12.5); g.fillStyle = fur; g.fill(); g.lineWidth = 2.2; g.strokeStyle = OUT; g.stroke();
+    // 볼 털
+    g.beginPath(); g.moveTo(hx-13,hy+3); g.lineTo(hx-17,hy+5); g.lineTo(hx-13,hy+7); g.moveTo(hx+13,hy+3); g.lineTo(hx+17,hy+5); g.lineTo(hx+13,hy+7); g.stroke();
+    // 눈썹(성난)
+    const glare = pose==="look";
+    g.lineWidth = 2.6; g.beginPath(); g.moveTo(hx-10,hy-6); g.lineTo(hx-2,hy-3); g.moveTo(hx+10,hy-6); g.lineTo(hx+2,hy-3); g.stroke();
+    if(pose==="sit" && !o.happy){ g.lineWidth = 2.6; g.beginPath(); g.moveTo(hx-10,hy-3); g.lineTo(hx-2,hy-5); g.moveTo(hx+10,hy-3); g.lineTo(hx+2,hy-5); g.stroke(); }
+    // 짝눈: 노랑·초록, 세로 동공
+    [[hx-6,hy+1,"#e8c547"],[hx+6,hy+1,"#8cc152"]].forEach(([ex,ey,c],i) => {
+      const r = glare ? 4 : 3.2;
+      if(o.happy){ g.lineWidth = 1.8; g.beginPath(); g.arc(ex,ey+1,3,Math.PI*1.1,Math.PI*1.9); g.stroke(); return; }
+      ell(g,ex,ey,r,r*(i? .8 : .95)); g.fillStyle = c; g.fill(); g.lineWidth = 1.4; g.stroke();
+      g.fillStyle = OUT; ell(g,ex,ey,.9,r*.75); g.fill();
+    });
+    // 흉터
+    g.strokeStyle = "#c46d62"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(hx+4,hy-8); g.lineTo(hx+9,hy+6); g.moveTo(hx+5,hy-4); g.lineTo(hx+8,hy-5); g.moveTo(hx+6,hy); g.lineTo(hx+9,hy-1); g.stroke();
+    // 코·입
+    g.fillStyle = "#5a3b3b"; g.beginPath(); g.moveTo(hx-1.6,hy+5); g.lineTo(hx+1.6,hy+5); g.lineTo(hx,hy+7); g.closePath(); g.fill();
+    g.strokeStyle = OUT; g.lineWidth = 1.6;
+    if(o.fish){
+      const im = fimg(o.fish);
+      if(im.complete && im.naturalWidth){ const w = 40, h = w*im.naturalHeight/im.naturalWidth; g.save(); g.translate(hx+2, hy+11); g.rotate(.12); g.drawImage(im,-w/2,-h/2,w,h); g.restore(); }
+    } else if(glare){ g.fillStyle = "#fff"; g.beginPath(); g.moveTo(hx-4,hy+9); g.lineTo(hx+4,hy+9); g.lineTo(hx,hy+12); g.closePath(); g.fill(); g.stroke(); }
+    else { g.beginPath(); g.moveTo(hx-4,hy+10); g.quadraticCurveTo(hx,hy+8,hx+4,hy+10); g.stroke(); }
+    g.restore();
+  }
+
+  // 216의 위장용 이음수산 택배 상자. p: 0(위에서 떨어지는 중)~1(다 씀)
+  function drawBox(g, x, y, p, peek){
+    const w = 60, h = 58, drop = (1 - p)*46;
+    g.save(); g.translate(x + 2, y - drop);
+    if(p >= 1){ g.fillStyle = "rgba(0,0,0,.16)"; ell(g,0,1,32,5); g.fill(); }
+    g.lineJoin = "round";
+    rr(g,-w/2,-h,w,h,3); g.fillStyle = "#c99a62"; g.fill(); g.strokeStyle = "#6e4a26"; g.lineWidth = 2; g.stroke();
+    g.fillStyle = "#b5854d"; g.beginPath(); g.moveTo(-w/2,-h); g.lineTo(w/2,-h); g.lineTo(w/2-6,-h-7); g.lineTo(-w/2+6,-h-7); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = "rgba(240,226,190,.85)"; g.fillRect(-5,-h-7,10,h+7);
+    rr(g,-22,-26,30,16,2); g.fillStyle = "#fffdf6"; g.fill(); g.lineWidth = 1; g.stroke();
+    g.fillStyle = "#14917f"; g.font = "bold 7px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("이음수산", -7, -21); g.fillStyle = "#6e4a26"; g.font = "6px sans-serif"; g.fillText("택배 · 생선", -7, -14);
+    g.fillStyle = "#2b2016"; rr(g,10,-46,16,6,3); g.fill();
+    if(p >= 1){ const blink = Math.floor((performance.now()/1000)*1.3) % 4 === 0; g.fillStyle = "#fff";
+      if(!blink){ ell(g,15,-43,2,1.6); g.fill(); ell(g,21,-43,2,1.6); g.fill(); g.fillStyle = OUT; ell(g,peek?14.4:15.6,-43,1,1.1); g.fill(); ell(g,peek?20.4:21.6,-43,1,1.1); g.fill(); } }
+    g.restore();
+  }
+
+  function bubble(g, x, y, text, color="#fff", ink=OUT){
+    g.save(); g.font = "bold 13px " + getComputedStyle(document.body).fontFamily;
+    const w = g.measureText(text).width + 16, h = 24, bx = clamp(x - w/2, 4, 9999), by = y - h;
+    g.fillStyle = color; g.strokeStyle = OUT; g.lineWidth = 1.6;
+    rr(g,bx,by,w,h,10); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(x-5,by+h-1); g.lineTo(x,by+h+6); g.lineTo(x+5,by+h-1); g.fill(); g.stroke();
+    g.fillStyle = color; g.fillRect(x-4,by+h-2.5,8,3);
+    g.fillStyle = ink; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, bx + w/2, by + h/2 + .5);
+    g.restore();
+  }
+
+  /* ---------- 그리기: 배경 ---------- */
+  function drawCrate(g, x, fishS){
+    const y = GY + 4, w = BOX_W, h = 46;
+    g.save();
+    if(fishS){ const im = fimg(fishS); if(im.complete && im.naturalWidth){ const fw = 46, fh = fw*im.naturalHeight/im.naturalWidth; g.save(); g.translate(x+w/2, y-h-2); g.rotate(-.18); g.drawImage(im,-fw/2,-fh/2,fw,fh); g.restore(); } }
+    g.fillStyle = "#e8f4fb"; rr(g,x+3,y-h-5,w-6,8,3); g.fill();
+    rr(g,x,y-h,w,h,3); g.fillStyle = "#c58a4e"; g.fill(); g.strokeStyle = "#6e4826"; g.lineWidth = 2; g.stroke();
+    g.strokeStyle = "rgba(110,72,38,.6)"; g.lineWidth = 1.5;
+    for(let i=1;i<3;i++){ g.beginPath(); g.moveTo(x+2,y-h+i*h/3); g.lineTo(x+w-2,y-h+i*h/3); g.stroke(); }
+    g.fillStyle = "#6e4826"; g.font = "bold 9px sans-serif"; g.textAlign = "center"; g.fillText("이음수산", x+w/2, y-h/2+3);
+    g.restore();
+  }
+  function drawCart(g, x, dir, t){
+    const y = GY + 4, w = CART_W;
+    g.save();
+    // 수레꾼 (장화와 앞치마)
+    const px = dir>0 ? x - 18 : x + w + 18, step = Math.sin(t*8)*4;
+    g.strokeStyle = OUT; g.lineWidth = 2;
+    g.fillStyle = "#2f3f56"; rr(g,px-9+step*.5,y-26,8,26,2); g.fill(); rr(g,px+1-step*.5,y-26,8,26,2); g.fill();
+    g.fillStyle = "#e9edf2"; rr(g,px-10,y-62,20,38,6); g.fill(); g.stroke();
+    g.fillStyle = "#3b8bd0"; rr(g,px-8,y-56,16,30,4); g.fill();
+    g.strokeStyle = "#e9edf2"; g.lineWidth = 5; g.beginPath(); g.moveTo(px, y-54); g.lineTo(dir>0? x+4 : x+w-4, y-40); g.stroke();
+    // 수레
+    g.fillStyle = "#4d5967"; rr(g,x,y-22,w,8,3); g.fill();
+    [x+18,x+w-18].forEach(cx => { ell(g,cx,y-8,9,9); g.fillStyle = "#2b3442"; g.fill(); ell(g,cx,y-8,3,3); g.fillStyle = "#aab4c0"; g.fill(); });
+    for(let i=0;i<2;i++){ const bx = x+6+i*(w/2-4), by = y-22; g.beginPath(); g.moveTo(bx-2,by-40); g.lineTo(bx+w/2-6,by-40); g.lineTo(bx+w/2-10,by); g.lineTo(bx+2,by); g.closePath(); g.fillStyle = "#2f78c4"; g.fill(); g.strokeStyle = "#1d4f86"; g.lineWidth = 2; g.stroke(); }
+    rr(g,x+10,y-70,w-20,10,3); g.fillStyle = "#e8f4fb"; g.fill();
+    g.restore();
+  }
+
+  function drawBackdrop(g, cam, stg, t){
+    // 새벽 하늘
+    const sky = g.createLinearGradient(0,0,0,170); sky.addColorStop(0,"#a9cbe6"); sky.addColorStop(.75,"#f6dcc0"); sky.addColorStop(1,"#f7c9a0");
+    g.fillStyle = "#a9cbe6"; g.fillRect(0,-H,vw,H); g.fillStyle = sky; g.fillRect(0,0,vw,170);
+    // 해
+    g.fillStyle = "rgba(255,214,150,.9)"; ell(g, 430 - cam*.02, 150, 26, 26); g.fill();
+    // 바다
+    g.fillStyle = "#6a9fc4"; g.fillRect(0,148,vw,40);
+    g.strokeStyle = "rgba(255,255,255,.45)"; g.lineWidth = 1.5;
+    for(let i=0;i<15;i++){ const wx = ((i*97 - cam*.12) % 1100 + 1100) % 1100 - 40; g.beginPath(); g.moveTo(wx,160+(i%3)*8); g.lineTo(wx+22,160+(i%3)*8); g.stroke(); }
+    // 먼 등대와 배
+    const far = cam*.15;
+    for(let k=-1;k<3;k++){
+      const lx = k*700 + 320 - (far % 700);
+      g.fillStyle = "#fdfdfd"; g.fillRect(lx,112,10,36); g.fillStyle = "#d9534f"; g.fillRect(lx,112,10,8); g.fillRect(lx,128,10,7);
+      g.fillStyle = "#3b4a5a"; g.beginPath(); g.moveTo(lx-3,112); g.lineTo(lx+5,102); g.lineTo(lx+13,112); g.fill();
+      const bx = lx - 240; g.fillStyle = "#f4f6f8"; g.beginPath(); g.moveTo(bx,140); g.lineTo(bx+58,140); g.lineTo(bx+50,150); g.lineTo(bx+6,150); g.fill();
+      g.fillStyle = "#2f6f8f"; g.fillRect(bx+14,128,20,12); g.strokeStyle = "#3b4a5a"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(bx+40,140); g.lineTo(bx+40,112); g.stroke();
+    }
+    // 갈매기
+    g.strokeStyle = "#4b5866"; g.lineWidth = 1.6;
+    for(let i=0;i<3;i++){ const gx = ((i*190 + t*18 - cam*.1) % 620 + 620) % 620 - 30, gy = 40 + i*22 + Math.sin(t*2+i)*4;
+      g.beginPath(); g.moveTo(gx-7,gy); g.quadraticCurveTo(gx-3,gy-5,gx,gy); g.quadraticCurveTo(gx+3,gy-5,gx+7,gy); g.stroke(); }
+    // 위판장 지붕과 기둥 (중간 거리)
+    const mid = cam*.55;
+    g.fillStyle = "#5c6b7a"; g.fillRect(0,92,vw,6);
+    for(let k=-1;k<7;k++){
+      const sx = k*210 - (mid % 210);
+      g.fillStyle = "#7a8796"; g.fillRect(sx+4,98,6,92);
+      const cols = (Math.floor((mid)/210)+k) % 2 ? ["#14917f","#f2f5f4"] : ["#f08a3c","#fbf3ea"];
+      for(let s=0;s<6;s++){ g.fillStyle = cols[s%2]; g.beginPath(); g.moveTo(sx+20+s*28,108); g.lineTo(sx+48+s*28,108); g.lineTo(sx+48+s*28,124); g.quadraticCurveTo(sx+34+s*28,132,sx+20+s*28,124); g.fill(); }
+      g.fillStyle = "#9aa7b4"; g.fillRect(sx+26,176,150,14);
+      g.fillStyle = "#3d7fb8"; g.fillRect(sx+34,166,30,12); g.fillStyle = "#e4553f"; g.fillRect(sx+80,166,30,12); g.fillStyle = "#3d7fb8"; g.fillRect(sx+126,166,30,12);
+    }
+    // 바닥
+    const grd = g.createLinearGradient(0,188,0,H); grd.addColorStop(0,"#b9b3a8"); grd.addColorStop(1,"#d6d0c4");
+    g.fillStyle = grd; g.fillRect(0,188,vw,H-188);
+    g.strokeStyle = "rgba(0,0,0,.07)"; g.lineWidth = 1;
+    for(let k=0;k<16;k++){ const lx = k*80 - (cam % 80); g.beginPath(); g.moveTo(lx,188); g.lineTo(lx-30,H); g.stroke(); }
+    g.beginPath(); g.moveTo(0,222); g.lineTo(vw,222); g.moveTo(0,268); g.lineTo(vw,268); g.stroke();
+  }
+
+  /* ---------- 상태 ---------- */
+  let cv, g, k = 1, dpr = 1;
+  let S = null;              // 현재 판
+  let run = null;            // 한 게임 전체 기록
+  let lastT = 0, rafId = 0, playing = false;
+  let hold = false;
+
+  function newRun(){ run = { stage:0, results:[], recovered:[] }; }
+
+  function setupStage(i){
+    const st = STAGES[i];
+    const n = st.ground.length, span = st.len - 1150;
+    const ground = st.ground.map((s,j) => ({ s, x: Math.round(260 + (j+.5)*span/n + ((j*37)%60 - 30)), taken:false }));
+    S = {
+      i, st, t:0, x:100, v:0, stun:0, disg:1, wonder:false, jump:null, pickT:0, carried:[], seen:0,
+      sx:100 + START_GAP, sState:"walk", sT:rand(1.6,2.4), looks:0, flee:null, belled:false, sBub:null, mBub:null,
+      ground, carts: st.carts.map(([a,b],j) => ({ a, b, x:a + j*40, dir:1 })), over:null, caughtT:0, endT:0, ph:0, sph:0, wasHidden:false,
+      hintKey:""
+    };
+  }
+
+  const inWet = x => S.st.wet.some(([a,b]) => x >= a && x <= b);
+  function hidden(x){
+    if(S.st.boxes.some(b => x >= b + 4 && x <= b + BOX_W - 4)) return true;
+    if(S.carts.some(c => x >= c.x + 6 && x <= c.x + CART_W - 6)) return true;
+    return false;
+  }
+  const loadW = () => S.carried.reduce((a,s) => a + FISH[s].w, 0);
+  const vmax = () => VMAX / (1 + .035*loadW());
+  const fric = () => (inWet(S.x) ? FR_WET : FR_DRY) / (1 + .08*loadW());
+  const lookingNow = () => S.sState === "look";
+
+  function spotted(reason){
+    if(S.sState === "flee" || S.over) return;
+    S.seen++; S.combo = 0;
+    S.sState = "flee"; S.flee = { from:S.sx, to:S.sx + FLEE, t:0 };
+    S.sBub = { text: reason==="bump" ? "캬악! 저리 가!" : "캬악!", t:1.3 };
+    S.mBub = { text: reason==="miss" ? "헛짚었다!" : reason==="box" ? "상자를 덜 썼다!" : "앗, 들켰다!", t:1.2 };
+    if(S.jump){ S.jump = null; }
+    S.stun = .7; S.v = 0; S.disg = 0;
+    hiss(); updateHud();
+  }
+
+  function doPounce(){
+    if(!S || S.over || S.jump || S.stun > 0) return false;
+    const d = S.sx - S.x;
+    // 덮치기 범위 안이고 꼬질이가 보고 있지 않으면 반드시 잡는다(뛰는 동안 꼬질이를 따라감)
+    if(d > PR_MAX || d < PR_MIN || lookingNow()) return false;
+    tick(520,.12,.14);
+    S.jump = { t:0, x0:S.x }; S.v = 0; S.perfectShot = Math.abs(d - J) <= 15;
+    return true;
+  }
+
+  const PR_MIN = 30, PR_MAX = 165;
+  // 지금 누르면 잡히는가: 범위 안 + 꼬질이가 안 보고 있음
+  function predictedOk(){
+    const d = S.sx - S.x;
+    return d >= PR_MIN && d <= PR_MAX && !lookingNow() && S.stun <= 0 && !S.jump;
+  }
+
+  function update(dt){
+    if(!S || S.over === "done") return;
+    S.t += dt;
+    const st = S.st;
+    if(S.sBub && (S.sBub.t -= dt) <= 0) S.sBub = null;
+    if(S.mBub && (S.mBub.t -= dt) <= 0) S.mBub = null;
+    // 수레
+    S.carts.forEach(c => { c.x += c.dir*30*dt; if(c.x > c.b){ c.x = c.b; c.dir = -1; } if(c.x < c.a){ c.x = c.a; c.dir = 1; } });
+
+    if(S.over === "caught"){ S.caughtT += dt; if(S.caughtT > .9 && S.caughtT - dt <= .9) stageClear(); if(S.caughtT > .9) S.sx += 260*dt; return; }
+    if(S.over === "escaped"){ S.sx += 120*dt; return; }
+
+    // 꼬질이
+    if(S.sState === "walk"){
+      S.sx += st.speed*dt; S.sph += dt*8; S.sT -= dt;
+      if(S.sT <= 0 && !S.groomed && progress() > .12 && Math.random() < .22){
+        // 그루밍 틈: 앉아서 털을 고르느라 눈을 감는다 → 마음껏 달릴 기회
+        S.sState = "groom"; S.sT = rand(1.6, 2.3); S.groomed = true; tick(880,.1,.06);
+        S.sBub = { text:["할짝할짝…","그루밍 그루밍~","으음, 털이 엉켰네"][Math.floor(Math.random()*3)], t:1.6 };
+      } else if(S.sT <= 0){
+        S.groomed = false;
+        const pr = progress();
+        S.belled = pr >= (st.bellFrom||0) && Math.random() < st.bell;
+        S.sState = "warn"; S.sT = st.warn - (st.warn - (st.warnEnd ?? st.warn))*pr;
+        S.faking = !S.belled && pr >= (st.fakeFrom||0) && Math.random() < (st.fake || 0);
+        if(S.belled){ bellSnd(); } else tick(300,.15,.08);
+      }
+    } else if(S.sState === "warn"){
+      S.sT -= dt; if(S.sT <= 0){ if(S.faking){ S.faking = false; S.sState = "walk"; S.sT = rand(...st.walk); S.sBub = { text:["킁. 아무것도 아냐.","…헤헷, 속았지?","흥, 기지개 켠 거야."][Math.floor(Math.random()*3)], t:1.2 }; } else { S.sState = "look"; S.sT = rand(...st.look); S.looks = S.belled ? 2 : 1; closeCall(); } }
+    } else if(S.sState === "look"){
+      S.sT -= dt;
+      if(S.sT <= 0){ S.looks--; if(S.looks > 0){ S.sState = "gap"; S.sT = .42; } else { S.sState = "walk"; S.sT = rand(...st.walk); } }
+    } else if(S.sState === "groom"){
+      S.sT -= dt; S.sph += dt*3; if(S.sT <= 0){ S.sState = "walk"; S.sT = rand(.5, 1.2); }
+    } else if(S.sState === "gap"){
+      S.sT -= dt; if(S.sT <= 0){ S.sState = "look"; S.sT = rand(...st.look)*.8; }
+    } else if(S.sState === "flee"){
+      const f = S.flee; f.t += dt; const p = clamp(f.t/.55, 0, 1);
+      S.sx = f.from + (f.to - f.from)*(1 - Math.pow(1-p, 2)); S.sph += dt*20;
+      if(p >= 1){ S.sState = "walk"; S.sT = rand(...st.walk) + .6; }
+    }
+    if(S.sx >= st.len){ S.sx = st.len; escaped(); return; }
+    if(S.sState === "walk") phaseTalk();
+
+    // 216
+    if(S.stun > 0){ S.stun -= dt; S.v = 0; }
+    else if(S.jump){
+      const jp = S.jump; jp.t += dt; const p = clamp(jp.t/JD, 0, 1);
+      const e = 1 - Math.pow(1 - p, 2);
+      S.x = jp.x0 + (S.sx - jp.x0)*e;
+      if(p >= 1){ S.jump = null; caught(); return; }
+    } else {
+      if(hold){ S.v = Math.min(vmax(), S.v + ACC*dt); }
+      else S.v = Math.max(0, S.v - fric()*dt);
+      if(S.v > vmax()) S.v = Math.max(vmax(), S.v - fric()*dt);
+      S.x += S.v*dt; S.ph += S.v*dt*.17;
+    }
+    // 부딪힘
+    if(!S.jump && S.sState !== "flee" && S.sx - S.x < 26){ S.x = S.sx - 26; spotted("bump"); }
+    // 들킴
+    // 위장: 완전히 멈추면 택배 상자를 뒤집어쓴다(0.15초). 움직이면 바로 벗는다
+    if(S.v <= 3 && !S.jump && !hold){ if(S.disg < 1 && S.disg + dt/.15 >= 1) S.boxAt = S.t; S.disg = Math.min(1, S.disg + dt/.15); } else S.disg = 0;
+    if(S.sState === "look" && !S.jump && !hidden(S.x) && (S.v > 3 || S.disg < 1)) spotted(S.disg < 1 && S.v <= 3 ? "box" : "seen");
+    if(S.sState === "look" && !S.wonder && !S.over && S.disg >= 1 && !hidden(S.x) && S.sx - S.x < 420){ S.wonder = true; if(Math.random() < .5) S.sBub = { text: ["…웬 상자?","상자네. 흥.","…저 상자 수상한데"][Math.floor(Math.random()*3)], t:1.1 }; }
+    if(S.sState !== "look") S.wonder = false;
+    // 줍기
+    if(!hold && !S.jump && S.v < 4 && S.stun <= 0){
+      const f = S.ground.find(f => !f.taken && Math.abs(f.x - S.x) < 24);
+      if(f){ S.pickT += dt; if(S.pickT >= .25){ f.taken = true; S.carried.push(f.s); S.pickT = 0; play("match",.5); S.mBub = { text:`${f.s} 주웠다!`, t:1 }; updateHud(); } }
+      else S.pickT = 0;
+    } else S.pickT = 0;
+  }
+
+  // 아슬아슬: 꼬질이가 돌아보기 직전(0.35초 안)에 상자를 다 썼을 때
+  function closeCall(){
+    if(S.disg >= 1 && !hidden(S.x) && S.t - (S.boxAt ?? -9) < .35){
+      S.close = (S.close||0) + 1; S.combo = (S.combo||0) + 1; S.bestCombo = Math.max(S.bestCombo||0, S.combo);
+      S.mBub = { text: S.combo > 1 ? `아슬아슬! ×${S.combo}` : "아슬아슬!", t:1.1 }; S.flash = .5; tick(990,.08,.1);
+    }
+  }
+  function caught(){
+    S.perfect = !!S.perfectShot;
+    S.over = "caught"; S.caughtT = 0; S.x = S.sx - 30;
+    S.sBub = { text:"꺄웅…!", t:1.2 }; S.mBub = { text: S.perfect ? "완벽한 덮치기!" : "잡았다!", t:1.4 };
+    if(S.perfect){ S.slow = .9; S.shake = .35; }
+    play("match", .8); hold = false; setPad(false);
+  }
+  function escaped(){
+    S.over = "escaped"; hold = false; setPad(false);
+    S.sBub = { text:"메롱~", t:2 };
+    play("fail", .6);
+    setTimeout(() => showOverlay("fail"), 900);
+  }
+  // 꼬질이의 경계심: 216이 가까이 올수록 올라가고 내려가지 않는다
+  function progress(){ S.alert = Math.max(S.alert || 0, clamp(1 - (S.sx - S.x - 90)/(START_GAP - 90), 0, 1)); return S.alert; }
+  // 단계가 바뀔 때 꼬질이가 한마디 해서 알려 준다
+  function phaseTalk(){
+    const pr = progress(), st = S.st;
+    if(!S.ph1 && pr >= st.fakeFrom){ S.ph1 = true; S.sBub = { text:"흥, 따라오는 거 다 알아.", t:1.8 }; S.mBub = { text:"이제 꼬리 속임수를 쓸 거야!", t:1.8 }; }
+    if(!S.ph2 && pr >= st.bellFrom){ S.ph2 = true; S.sBub = { text:"경매 시작이다~", t:1.8 }; S.mBub = { text:"종이 울리면 두 번 돌아봐!", t:1.8 }; }
+  }
+  function stageClear(){
+    const stars = S.seen === 0 ? 3 : S.seen <= 2 ? 2 : 1;
+    run.time = S.t; run.close = S.close||0; run.bestCombo = S.bestCombo||0; run.perfect = !!S.perfect;
+    const fish = [...S.carried, S.st.steal];
+    run.results[S.i] = { stars, seen:S.seen, fish };
+    if(S.i === STAGES.length - 1){ startEnding(); return; }
+    showOverlay("clear", { stars, fish });
+  }
+
+  /* ---------- 엔딩 장면 ---------- */
+  function startEnding(){
+    S.over = "ending"; S.endT = 0; S.sState = "sit"; S.sBub = null; S.mBub = null;
+    S.sx = S.x + 120;
+    play("clear", .5);
+    S.hintKey = ""; setHint("end", "잡았다! 그런데 꼬질이 표정이…", "ok");
+    $("pounceBtn").disabled = true; $("pounceBtn").classList.remove("ready"); $("pounceSub").textContent = "끝!";
+  }
+  function updateEnding(dt){
+    S.endT += dt; const t = S.endT;
+    S.sBub = null; S.mBub = null;
+    if(t < 1.3) S.mBub = { text:"꼼짝 마! 홍어 내놔.", t:1 };
+    else if(t < 2.8) S.mBub = { text:"훔치지 말고 와서 먹어.", t:1 };
+    if(t >= 1.3 && t < 2.8) S.sBub = { text:"…쳇.", t:1 };
+    if(t >= 3.6 && t < 5.2) S.sBub = { text:"…흥. 잘 먹을게.", t:1 };
+    if(t >= 5.2) S.sx += 240*dt;
+    if(t > 6.6 && S.over === "ending"){ S.over = "done"; finish(); }
+  }
+  function drawEnding(g){
+    const t = S.endT, cam = S.x - 160;
+    // 홍어는 216 앞에 놓임
+    const hx = S.x + 52 - cam; const im = fimg("홍어");
+    if(im.complete && im.naturalWidth){ g.drawImage(im, hx - 22, GY - 18, 44, 44*im.naturalHeight/im.naturalWidth); }
+    // 밴댕이 던지기
+    const toss = clamp((t - 2.8)/.8, 0, 1);
+    let strayFish = null;
+    if(t >= 2.8 && t < 3.6){
+      const bx0 = S.x + 20 - cam, bx1 = S.sx + 16 - cam, x = bx0 + (bx1 - bx0)*toss, y = GY - 40 - Math.sin(toss*Math.PI)*70;
+      const b = fimg("밴댕이"); if(b.complete && b.naturalWidth){ g.save(); g.translate(x,y); g.rotate(toss*Math.PI*2); g.drawImage(b,-18,-6,36,36*b.naturalHeight/b.naturalWidth); g.restore(); }
+    }
+    if(t >= 3.6) strayFish = "밴댕이";
+    draw216(g, S.x - cam, GY, { pose:"idle", t:S.t + t, mouth: (t>1.3 && t<2.8) ? "open" : null });
+    const leaving = t >= 5.2;
+    drawStray(g, S.sx - cam, GY, { pose: leaving ? "flee" : "sit", dir: leaving ? 1 : -1, fish: strayFish, ph: t*20, happy: t >= 3.6 && !leaving });
+  }
+
+  /* ---------- 렌더 ---------- */
+  function resize(){
+    const w = cv.clientWidth; dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const h = Math.round(w*H/VW); cv.style.height = h + "px";
+    cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr); k = w/VW;
+  }
+  function render(){
+    if(!S) return;
+    const st = S.st, endScene = S.over === "ending" || S.over === "done";
+    const tz = endScene ? 1 : clamp((S.sx - S.x + 200)/VW, 1, 1.35);
+    Z += (tz - Z)*.08; vw = VW*Z;
+    g.setTransform(dpr*k/Z,0,0,dpr*k/Z,0,0); g.translate(0, H*(Z-1));
+    if(S.shake > 0) g.translate((Math.random()-.5)*8, (Math.random()-.5)*6);
+    const cam = endScene ? S.x - 160 : S.x - 110*Z;
+    drawBackdrop(g, cam, st, S.t);
+    if(S.over === "ending" || S.over === "done"){ drawEnding(g); drawBubbles(g, cam); return; }
+
+    // 출발 가게
+    if(S.i === 0 && cam < 200){ const px = -40 - cam; g.fillStyle = "#14917f"; g.fillRect(px,120,170,18); g.fillStyle = "#fff"; g.font = "bold 13px sans-serif"; g.textAlign = "center"; g.fillText("이상한 생선가게 이음수산", px+85, 134); }
+    // 골목
+    const ax = st.len + 20 - cam;
+    if(ax < vw + 40){
+      g.fillStyle = "#4a4f57"; g.fillRect(ax, 70, 240, GY - 70 + 6);
+      g.fillStyle = "#1c2026"; rr(g, ax+30, 120, 70, GY - 120 + 6, 30); g.fill();
+      g.fillStyle = "#f4c430"; g.font = "bold 14px sans-serif"; g.textAlign = "center"; g.fillText("골목", ax+65, 108);
+    }
+    // 물바닥
+    st.wet.forEach(([a,b]) => {
+      const x0 = a - cam, x1 = b - cam; if(x1 < -20 || x0 > vw + 20) return;
+      g.fillStyle = "rgba(70,140,205,.32)"; rr(g, x0, GY - 8, x1 - x0, 22, 11); g.fill();
+      g.strokeStyle = "rgba(255,255,255,.75)"; g.lineWidth = 2;
+      for(let xx = x0 + 18; xx < x1 - 10; xx += 46){ g.beginPath(); g.moveTo(xx, GY + 2); g.lineTo(xx + 16, GY - 2); g.stroke(); }
+      g.fillStyle = "#3d7fb8"; g.font = "bold 10px sans-serif"; g.textAlign = "left"; g.fillText("💧 물바닥", x0 + 6, GY + 26);
+    });
+    // 흘린 생선
+    S.ground.forEach(f => {
+      if(f.taken) return; const x = f.x - cam; if(x < -40 || x > vw + 40) return;
+      const im = fimg(f.s); if(im.complete && im.naturalWidth){ const w = 36, h = w*im.naturalHeight/im.naturalWidth; g.drawImage(im, x - w/2, GY - h + 2, w, h); }
+      if(Math.abs(f.x - S.x) < 60){ g.fillStyle = OUT; g.font = "bold 10px sans-serif"; g.textAlign = "center"; g.fillText(f.s, x, GY + 16); }
+    });
+    // 시야 (돌아볼 때)
+    const sxs = S.sx - cam;
+    if(S.sState === "look"){
+      const grd = g.createLinearGradient(sxs, 0, sxs - 520, 0); grd.addColorStop(0, "rgba(255,206,64,.38)"); grd.addColorStop(1, "rgba(255,206,64,0)");
+      g.fillStyle = grd; g.beginPath(); g.moveTo(sxs + 4, GY - 36); g.lineTo(sxs - 560, GY - 110); g.lineTo(sxs - 560, GY + 30); g.lineTo(sxs + 4, GY - 20); g.closePath(); g.fill();
+    }
+    // 덮치기 착지 표시
+    // 덮치기 범위: 이 띠 안에 꼬질이가 들어오면 덮치기 가능. 가운데 발자국에 맞추면 완벽
+    if(!S.over && S.sx - S.x < PR_MAX + 160 && S.stun <= 0 && !S.jump){
+      const ok = predictedOk(), inR = S.sx - S.x >= PR_MIN && S.sx - S.x <= PR_MAX;
+      const c = ok ? "#14b37f" : inR ? "#e2553f" : "rgba(43,52,66,.4)";
+      const x0 = S.x + PR_MIN - cam, x1 = S.x + PR_MAX - cam, lx = S.x + J - cam;
+      g.fillStyle = ok ? "rgba(20,179,127,.16)" : "rgba(43,52,66,.06)"; rr(g, x0, GY - 6, x1 - x0, 14, 7); g.fill();
+      g.strokeStyle = c; g.lineWidth = 2; g.setLineDash([5,4]); rr(g, x0, GY - 6, x1 - x0, 14, 7); g.stroke(); g.setLineDash([]);
+      g.fillStyle = c; [[-6,-1],[0,-4],[6,-1]].forEach(([dx,dy]) => { ell(g, lx+dx, GY+dy, 2.3, 2.3); g.fill(); }); ell(g, lx, GY+4, 4, 3); g.fill();
+    }
+    // 꼬질이
+    let sp = S.sState === "walk" ? "walk" : S.sState === "flee" ? "flee" : (S.sState === "warn") ? "warn" : S.sState === "groom" ? "sit" : "look";
+    if(S.sState === "gap") sp = "warn";
+    if(S.over === "caught"){ sp = "flee"; }
+    const sdir = (S.sState === "look" && !S.over) ? -1 : 1;
+    drawStray(g, sxs, GY, { pose: sp, dir: sdir, ph: S.sph + S.t*6, fish: S.over === "caught" ? null : st.steal, happy: S.sState === "groom" });
+    if(S.sState === "groom" && !S.over){ g.fillStyle = "#14917f"; g.font = "bold 18px sans-serif"; g.textAlign = "center"; g.fillText("💤", sxs + 30, GY - 62); }
+    if(S.over === "caught"){ const im = fimg(st.steal); if(im.complete && im.naturalWidth){ g.drawImage(im, S.x + 20 - cam, GY - 20, 46, 46*im.naturalHeight/im.naturalWidth); } }
+    // 경고 표시
+    if(S.sState === "warn" && !S.over){
+      const blink = Math.floor(S.t*8) % 2;
+      g.fillStyle = S.belled ? "#e9a825" : "#e2553f"; g.font = "bold 26px sans-serif"; g.textAlign = "center";
+      g.fillText(S.belled ? "🔔" : (blink ? "!" : "!!"), sxs + 14, GY - 76);
+    }
+    if(S.sState === "gap" && !S.over){ g.fillStyle = "#e9a825"; g.font = "bold 22px sans-serif"; g.textAlign = "center"; g.fillText("🔔 한 번 더!", sxs + 10, GY - 76); }
+    // 216
+    let pose = "idle";
+    if(S.stun > 0) pose = "stun";
+    else if(S.jump) pose = "jump";
+    else if(hold && S.v > 5) pose = "run";
+    else if(S.v > 5) pose = "slide";
+    else if(S.pickT > 0) pose = "pick";
+    let lift = 0; if(S.jump){ const p = clamp(S.jump.t/JD, 0, 1); lift = Math.sin(p*Math.PI)*48; }
+    const mx = S.x - cam;
+    if(pose === "slide" && inWet(S.x)){ g.fillStyle = "rgba(255,255,255,.8)"; for(let i=0;i<3;i++){ ell(g, mx - 22 - i*8, GY - 2 - (i%2)*4, 3 - i*.6, 2); g.fill(); } }
+    if(S.disg < 1 || S.over) draw216(g, mx, GY, { pose, ph:S.ph, lift, load:S.carried, t:S.t });
+    if(S.disg > 0 && !S.over) drawBox(g, mx, GY, S.disg, S.sState === "look");
+    // 상자와 수레는 216 앞에 그려서 숨은 느낌
+    st.boxes.forEach((b,j) => { const x = b - cam; if(x > -80 && x < vw + 20) drawCrate(g, x, Object.keys(FISH)[(j*5 + S.i*3) % 12]); });
+    S.carts.forEach(c => { const x = c.x - cam; if(x > -180 && x < vw + 60) drawCart(g, x, c.dir, S.t); });
+    if(hidden(S.x) && !S.jump && !S.over){ g.fillStyle = "#14917f"; g.font = "bold 11px sans-serif"; g.textAlign = "center"; g.fillText("숨는 중", mx, GY - 84); }
+    // 화면 밖 꼬질이
+    if(sxs > vw - 10 && !S.over){
+      const by = 14 - H*(Z-1), bx = vw - 104*Z;
+      g.save(); g.translate(bx, by); g.scale(Z, Z);
+      g.fillStyle = S.sState === "look" ? "rgba(226,85,63,.92)" : S.sState === "warn" || S.sState === "gap" ? "rgba(233,168,37,.95)" : "rgba(43,52,66,.82)";
+      rr(g, 0, 0, 96, 62, 14); g.fill();
+      g.save(); g.beginPath(); g.rect(0,0,96,62); g.clip();
+      g.translate(40, 57); g.scale(.68, .68); drawStray(g, 0, 0, { pose: sp, dir: sdir, ph: S.sph, fish: st.steal }); g.restore();
+      g.fillStyle = "#fff"; g.font = "bold 12px sans-serif"; g.textAlign = "right"; g.fillText(`▶${Math.round((S.sx - S.x)/10)}m`, 92, 16);
+      g.restore();
+    }
+    if(S.flash > 0 && !S.over){ g.save(); g.globalAlpha = clamp(S.flash*2, 0, 1); g.strokeStyle = "#f4c430"; g.lineWidth = 4; ell(g, mx + 2, GY - 30, 44 + (.5 - S.flash)*30, 40 + (.5 - S.flash)*26); g.stroke(); g.restore(); }
+    drawBubbles(g, cam);
+  }
+  function drawBubbles(g, cam){
+    if(S.sBub) bubble(g, clamp(S.sx - cam + 12, 50, vw - 50), GY - 78, S.sBub.text, "#fff");
+    const bothNear = S.sBub && S.mBub && Math.abs(S.sx - S.x) < 190;
+    if(S.mBub) bubble(g, clamp(S.x - cam + 10, 50, vw - 50), GY - (bothNear ? 116 : 84), S.mBub.text, "#d7efe9");
+  }
+
+  /* ---------- HUD ---------- */
+  function updateHud(){
+    if(!S) return;
+    $("hudStage").textContent = S.st.name;
+    $("hudSeen").textContent = `👀 들킴 ${S.seen}`;
+    $("hudLoad").textContent = `🚪 골목까지 ${Math.max(0, Math.round((S.st.len - S.sx)/10))}m`;
+  }
+  function setupTrack(){
+    const tr = $("track"); tr.querySelectorAll(".wetbar").forEach(e => e.remove());
+    S.st.wet.forEach(([a,b]) => { const d = document.createElement("span"); d.className = "wetbar"; d.style.left = (a/S.st.len*100)+"%"; d.style.width = ((b-a)/S.st.len*100)+"%"; tr.appendChild(d); });
+  }
+  function updateTrack(){
+    $("tkMe").style.left = clamp(S.x/S.st.len*100, 0, 100) + "%";
+    $("tkKz").style.left = clamp(S.sx/S.st.len*100, 0, 100) + "%";
+    const sec = Math.floor(S.t); if(sec !== S.shownSec){ S.shownSec = sec; $("hudStage").textContent = `⏱ ${sec}초`; }
+  }
+  function setHint(key, text, cls=""){
+    if(S.hintKey === key) return; S.hintKey = key;
+    const h = $("hint"); h.textContent = text; h.className = "hint " + cls;
+  }
+  function updateHint(){
+    if(S.over) return;
+    const d = S.sx - S.x;
+    const pb = $("pounceBtn"), ok = predictedOk(), near = d <= PR_MAX + 160 && S.stun <= 0 && !S.jump;
+    pb.disabled = !ok; pb.classList.toggle("ready", ok);
+    $("pounceSub").textContent = ok ? (Math.abs(d - J) <= 15 ? "지금! 🎯" : "지금!") : (d <= PR_MAX && d >= PR_MIN && lookingNow()) ? "보고 있어요" : d < PR_MIN ? "너무 가까워요" : "가까이 가요";
+    if(S.stun > 0) return setHint("stun", "들켰다! 꼬질이가 멀리 달아났어요", "w");
+    if(S.sState === "warn") return setHint("warn"+S.belled, S.belled ? "🔔 종소리! 두 번 돌아봐요. 멈춰!" : "꼬리가 섰다! 손 떼!", "w");
+    if(S.sState === "gap") return setHint("gap", "아직이야! 한 번 더 돌아봐요", "w");
+    if(S.sState === "groom") return setHint("groom", "꼬질이가 그루밍 중! 지금이야, 달려!", "ok");
+    if(S.sState === "look") return setHint("look"+(S.disg>=1), hidden(S.x) ? "수레 뒤라 안 보여요" : S.disg >= 1 ? "📦 택배 상자인 척… 얼음!" : "얼음! 움직이면 들켜요", "w");
+    if(S.pickT > 0) return setHint("pick", "줍는 중…", "ok");
+    const f = S.ground.find(f => !f.taken && Math.abs(f.x - S.x) < 70);
+    if(f && S.v < 120) return setHint("fish"+f.s, `${f.s} 위에 딱 멈추면 주워요 (무게 ${FISH[f.s].w})`, "ok");
+    if(ok) return setHint(Math.abs(d - J) <= 15 ? "go2" : "go", Math.abs(d - J) <= 15 ? "🎯 발자국 딱 맞아요! 지금 덮치면 완벽!" : "지금 덮치면 잡아요! (발자국에 맞추면 완벽)", "ok");
+    if(near) return setHint("near", "초록 띠 안으로 꼬질이가 들어오면 덮치기!", "");
+    if(inWet(S.x)) return setHint("wet", "물바닥! 멈추려면 한참 미끄러져요", "w");
+    if(S.st.len - S.sx < 500) return setHint("alley", "골목이 가까워요. 서둘러요!", "w");
+    setHint("chase", "꾹 눌러서 따라가요");
+  }
+
+  /* ---------- 오버레이 ---------- */
+  function fishChips(list){ return list.map(s => `<span>${s} ${FISH[s].p}만</span>`).join(""); }
+  function showOverlay(kind, data){
+    const ov = $("ov"), c = $("ovCard"); ov.hidden = false;
+    $("pounceBtn").disabled = true; $("pounceBtn").classList.remove("ready");
+    if(kind === "story"){
+      const st = STAGES[run.stage];
+      c.innerHTML = `<h3>${st.name}</h3><p>${st.story}</p><p><b style="color:var(--acc)">${st.tip}</b></p><button class="btn" id="ovGo">시작</button>`;
+      $("ovGo").onclick = () => { ov.hidden = true; beginStage(); };
+      $("ovGo").focus();
+    } else if(kind === "clear"){
+      const st = STAGES[run.stage];
+      c.innerHTML = `<h3>${run.stage+1}판 성공! ${st.steal} 되찾음</h3><div class="stars">${"★".repeat(data.stars)}${"☆".repeat(3-data.stars)}</div>
+        <p>들킨 횟수 ${S.seen}번 · ${st.steal} ${FISH[st.steal].p}만 원어치 되찾음</p><button class="btn" id="ovGo">다음 판</button>`;
+      $("ovGo").onclick = () => { run.stage++; showOverlay("story"); };
+      $("ovGo").focus();
+    } else if(kind === "fail"){
+      c.innerHTML = `<h3>꼬질이가 골목으로 쏙!</h3><p>들킬 때마다 꼬질이가 멀리 달아나요. 상자와 수레 뒤를 이용해 보세요.</p><button class="btn" id="ovGo">이 판 다시</button>`;
+      $("ovGo").onclick = () => { ov.hidden = true; beginStage(); };
+      $("ovGo").focus();
+    }
+  }
+
+  /* ---------- 흐름 ---------- */
+  function beginStage(){
+    setupStage(run.stage); setupTrack(); updateHud(); hold = false; setPad(false);
+    S.hintKey = ""; updateHint();
+  }
+  function startGame(){
+    ac(); newRun();
+    $("intro").hidden = true; $("result").hidden = true; $("play").hidden = false;
+    resize(); setupStage(0); setupTrack(); updateHud();
+    if(!playing){ playing = true; lastT = performance.now(); rafId = requestAnimationFrame(loop); }
+    showOverlay("story");
+    S.over = "paused";
+  }
+  function loop(now){
+    let dt = Math.min(.05, (now - lastT)/1000); lastT = now;
+    if(S && S.slow > 0){ S.slow -= dt; dt *= .3; }
+    if(S && S.shake > 0) S.shake -= dt;
+    if(S && S.flash > 0) S.flash -= dt;
+    if(S && !(S.over === "paused") && $("ov").hidden || (S && (S.over === "caught" || S.over === "escaped" || S.over === "ending"))){
+      if(S.over === "ending") updateEnding(dt); else update(dt);
+      if(!S.over || S.over === "caught" || S.over === "escaped"){ updateTrack(); updateHint(); }
+    }
+    render();
+    if(playing) rafId = requestAnimationFrame(loop);
+  }
+  function finish(){
+    stopSnd("clear");
+    playing = false; cancelAnimationFrame(rafId);
+    $("play").hidden = true; $("result").hidden = false;
+    const r = run.results[0], sec = Math.round(run.time);
+    run.stars = r.stars; run.seen = r.seen; run.sec = sec;
+    let best = null; try{ best = JSON.parse(localStorage.getItem("fish13best") || "null"); }catch(e){}
+    const better = !best || r.seen < best.seen || (r.seen === best.seen && sec < best.sec);
+    if(better){ try{ localStorage.setItem("fish13best", JSON.stringify({ seen:r.seen, sec })); }catch(e){} }
+    $("rTotal").textContent = "★".repeat(r.stars) + "☆".repeat(3 - r.stars);
+    const rank = r.seen === 0 ? (sec <= 60 ? "그림자 고양이 216 🐾" : "들키지 않은 지킴이") : r.seen <= 2 ? "날쌘 이음수산 지킴이" : "아직 수련 중인 지킴이";
+    $("rRank").innerHTML = `${rank}<br><span style="font-weight:400;color:var(--muted);font-size:13.5px">홍어 되찾음 · 들킴 ${r.seen}번 · ${sec}초</span>`;
+    $("rStages").innerHTML = `<div><span>들킨 횟수</span><span>${r.seen}번</span></div><div><span>잡은 시간</span><span>${sec}초</span></div>`
+      + (best && !better ? `<div><span>내 최고 기록</span><span>들킴 ${best.seen}번 · ${best.sec}초</span></div>` : `<div><span>내 최고 기록</span><span class="s">🎉 새 기록!</span></div>`)
+      + `<div><span>아슬아슬 멈춤</span><span>${run.close}번${run.bestCombo > 1 ? ` (최고 ${run.bestCombo}연속)` : ""}</span></div>`
+      + `<div><span>덮치기</span><span>${run.perfect ? "🎯 완벽!" : "잡았다"}</span></div>`
+      + `<div><span style="color:var(--muted);font-size:12.5px">별 셋: 한 번도 안 들키기 · 다음 목표: ${r.seen ? "들킴 0번" : sec > 60 ? "60초 안에" : "더 빨리!"}</span><span></span></div>`;
+    $("rDex").innerHTML = "";
+    window.scrollTo({ top:0, behavior:"smooth" });
+  }
+
+  /* ---------- 입력 ---------- */
+  function setPad(on){ $("pad").classList.toggle("on", on); }
+  function press(on){
+    if(on) ac();
+    hold = on && !!S && !S.over; setPad(hold);
+  }
+  function bindHold(el){
+    let sy = null;
+    el.addEventListener("pointerdown", e => { e.preventDefault(); sy = e.clientY; try{ el.setPointerCapture(e.pointerId); }catch(_){} press(true); });
+    el.addEventListener("pointermove", e => { if(sy !== null && sy - e.clientY > 40){ sy = null; press(false); doPounce(); } });
+    const up = () => { sy = null; press(false); };
+    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("lostpointercapture", up);
+    el.addEventListener("contextmenu", e => e.preventDefault());
+  }
+  window.addEventListener("keydown", e => {
+    if($("play").hidden) return;
+    if(e.code === "Space" || e.code === "ArrowRight"){ if(!$("ov").hidden){ return; } e.preventDefault(); if(!e.repeat) press(true); }
+    if(e.code === "ArrowUp" || e.code === "KeyW"){ e.preventDefault(); doPounce(); }
+  });
+  window.addEventListener("keyup", e => { if(e.code === "Space" || e.code === "ArrowRight"){ press(false); } });
+  window.addEventListener("blur", () => press(false));
+
+  /* ---------- 시작 화면 그림 ---------- */
+  function drawCast(){
+    const c = $("castCv"), w = c.clientWidth || 320, h = Math.round(w*.36), r = Math.min(window.devicePixelRatio||1, 2.5);
+    c.width = w*r; c.height = h*r; c.style.height = h + "px";
+    const x = c.getContext("2d"), s = w/360; x.setTransform(r*s,0,0,r*s,0,0);
+    const gr = x.createLinearGradient(0,0,0,130); gr.addColorStop(0,"#a9cbe6"); gr.addColorStop(1,"#f6dcc0"); x.fillStyle = gr; x.fillRect(0,0,360,130);
+    x.fillStyle = "#c9c3b8"; x.fillRect(0,104,360,30);
+    x.save(); x.translate(0,-8);
+    draw216(x, 100, 112, { pose:"run", ph:1.2, t:0 });
+    drawStray(x, 250, 112, { pose:"warn", dir:1, fish:"광어", ph:0 });
+    x.restore();
+    x.fillStyle = OUT; x.font = "bold 12px " + getComputedStyle(document.body).fontFamily; x.textAlign = "center";
+    x.fillText("216", 100, 124); x.fillText("꼬질이", 255, 124);
+  }
+
+  /* ---------- 공유 ---------- */
+  function toast(t){ const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1800); }
+  async function share(){
+    const url = "https://hangunada-create.github.io/fishgame/13/";
+    const text = `216이 생선 도둑 꼬질이를 ${run.sec}초 만에 잡았다! 들킴 ${run.seen}번 · 아슬아슬 ${run.close}번${run.perfect ? " · 🎯완벽한 덮치기" : ""} ${"★".repeat(run.stars)}${"☆".repeat(3-run.stars)} 🐾\n너도 몰래 잡아 봐 👀`;
+    try{ if(navigator.share){ await navigator.share({ title:"216, 꼬질이를 잡아라", text, url }); return; } }catch(e){ if(e && e.name === "AbortError") return; }
+    try{ await navigator.clipboard.writeText(text + "\n" + url); toast("복사했어요. 붙여 넣어 자랑해 보세요!"); }catch(e){ toast(url); }
+  }
+
+  /* ---------- 초기화 ---------- */
+  cv = $("cv"); g = cv.getContext("2d");
+  bindHold($("pad")); bindHold(cv);
+  $("pounceBtn").addEventListener("click", () => { ac(); doPounce(); });
+  $("startBtn").onclick = startGame;
+  $("againBtn").onclick = startGame;
+  $("shareBtn").onclick = share;
+  window.addEventListener("resize", () => { if(!$("play").hidden) resize(); drawCast(); });
+  Promise.all(Object.values(IMG).map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; }))).then(drawCast);
+  drawCast();
+
+  /* ---------- 자동 시험용 ---------- */
+  if(AUTOTEST){
+    window.__k = {
+      S: () => S, run: () => run,
+      // 그리기 없이 한 판을 빠르게 돌린다. policy(S, api) → {hold, pounce}
+      sim(i, policy, maxT=240){
+        newRun(); run.stage = i; setupStage(i);
+        const dt = 1/60; let t = 0;
+        while(t < maxT){
+          const a = policy(S, { hidden, inWet, vmax, fric, predictedOk, J, JD, CATCH }) || {};
+          hold = !!a.hold;
+          if(a.pounce) doPounce();
+          update(dt); t += dt;
+          if(S.over === "caught" || S.over === "escaped") break;
+        }
+        hold = false;
+        return { over:S.over, seen:S.seen, carried:S.carried.slice(), t:Math.round(t), sx:Math.round(S.sx), x:Math.round(S.x) };
+      },
+      start(i){ startGame(); run.stage = i; $("ov").hidden = true; beginStage(); },
+      press, doPounce,
+      fakeEnd(){ run.results = [{ stars:2, seen:1, fish:['홍어'] }]; run.time = 74; run.close = 4; run.bestCombo = 3; run.perfect = true; run.stage = 0; setupStage(0); S.x = 900; startEnding(); },
+      finish
+    };
+  }
+})();
+</script>
+
+</body>
+</html>
