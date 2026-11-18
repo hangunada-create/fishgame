@@ -1,0 +1,25 @@
+{
+  "id": "/fishgame/",
+  "name": "생선 짝꿍 찾기",
+  "short_name": "생선 짝꿍",
+  "description": "생선 12종의 그림 카드를 두 장씩 뒤집어 같은 생선을 찾는 기억력 퍼즐 게임. 이상한생선가게 기억 게임 1탄.",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f2f6f9",
+  "theme_color": "#3da9fc",
+  "categories": ["games", "kids", "education"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "store/screen-wide-1.png", "sizes": "1920x1080", "type": "image/png", "form_factor": "wide", "label": "카드를 뒤집어 같은 생선을 찾아요" },
+    { "src": "store/screen-wide-2.png", "sizes": "1920x1080", "type": "image/png", "form_factor": "wide", "label": "12쌍을 모두 찾으면 기록이 나와요" },
+    { "src": "store/screen-narrow-1.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "휴대폰에서도 한 화면에" }
+  ]
+}
