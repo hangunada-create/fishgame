@@ -616,7 +616,7 @@ function updateFish(dt){
         break;
     }
     if (d.ai !== 'school') { f.x += f.vx*dt; f.y += f.vy*dt; }
-    if (f.scareT > 0 && d.ai !== 'school') { f.scareT -= dt; const k = Math.max(0, f.scareT/.7); f.x += f.sx*k*dt; f.y += (d.ai === 'bottom' ? 0 : f.sy*k*dt); if (Math.random() < dt*20) bubble(f.x, f.y, rand(1.5, 3)); }
+    if (f.scareT > 0 && d.ai !== 'school') { f.scareT -= dt; const k = Math.max(0, f.scareT/.7); f.x += f.scx*k*dt; f.y += (d.ai === 'bottom' ? 0 : f.scy*k*dt); if (Math.random() < dt*20) bubble(f.x, f.y, rand(1.5, 3)); }
     if (d.ai !== 'bottom' && d.ai !== 'burrow' && d.ai !== 'school') {
       if (f.y < yLo) { f.y = yLo; if (f.tvy < 0) f.tvy = -f.tvy; if (f.st === 'dart' || d.ai === 'gold') f.vy = Math.abs(f.vy); }
       if (f.y > yHi) { f.y = yHi; if (f.tvy > 0) f.tvy = -f.tvy; if (f.st === 'dart' || d.ai === 'gold') f.vy = -Math.abs(f.vy); }
@@ -695,7 +695,7 @@ function scareAt(x, y){
     const dx = f.x - x, dy = f.y - y, d = Math.hypot(dx, dy); if (d > 170) continue;
     if (f.grp) { f.grp.scare = 1.2; continue; }
     const k = 1 - d/170*.5, ux = d > 1 ? dx/d : (Math.random() < .5 ? -1 : 1), uy = d > 1 ? dy/d : 0;
-    f.scareT = .7; f.sx = ux*330*k; f.sy = uy*230*k; f.alert = .6;
+    f.scareT = .7; f.scx = ux*330*k; f.scy = uy*230*k; f.alert = .6;   // f.sy는 몸 늘이기 값이라 이름을 따로 쓴다
     if (Math.abs(ux) > .3 && f.def.ai !== 'bottom') f.face = ux > 0 ? 1 : -1;
   }
 }
@@ -1529,6 +1529,7 @@ function botThink(){
   if (dist < HP_RANGE*.85 && HP.st === 'ready') bot.fire = !(bot.wait > 0);
 }
 if (AUTOTEST) window.__g = {
+  rawFishes: () => fishes,
   tug: () => HP.tug && { p: HP.tug.p, t: HP.tug.t, need: HP.tug.need }, clams: () => clams, floorY: () => floorY,
   state: () => ({ bonusSec, hp2: HP.st, bigHP, whale: !!whale, feverCaught, jellies: jellies.length, state, timeLeft, score, combo, maxCombo, caught, caughtN, fish: fishes.length, hp: HP.st, px: P.x, py: P.y, camX, W, H, WW, S, best: store.best, dex: Object.keys(store.dex).length, newBest, events: events.length, parts: parts.length }),
   start: startGame, end: endGame, pause: pauseGame, resume: resumeGame, menu: goMenu,
