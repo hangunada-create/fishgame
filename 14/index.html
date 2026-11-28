@@ -47,6 +47,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--sun);outline-offset
 #hTimeBox small{font-size:13px;color:var(--mute)}
 #hTimeBox.low{background:var(--coral);color:#fff;animation:beat .5s ease-in-out infinite alternate}
 #hTimeBox.low small{color:#fff}
+#hTimeBox.bump2{animation:bump .35s ease-out;background:#fff3c9}
 @keyframes beat{to{transform:scale(1.1)}}
 #hMid{text-align:center;display:flex;flex-direction:column;align-items:center;gap:0}
 #hScore{font-size:38px;line-height:1;color:#fff;-webkit-text-stroke:7px var(--ink);paint-order:stroke fill;font-variant-numeric:tabular-nums;letter-spacing:.5px}
@@ -198,6 +199,10 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--sun);outline-offset
         <li><b>PC</b><span>WASD·방향키로 이동, 마우스로 조준, 클릭이나 스페이스로 발사. ESC는 일시정지.</span></li>
         <li><b>모바일</b><span>왼쪽 아래를 끌어서 이동. 물고기를 톡 누르면 그쪽으로 발사. 발사 버튼은 가는 방향으로 쏴요.</span></li>
         <li><b>작살</b><span>한 번에 하나만 나가요. 멀리 빗나가면 돌아오는 데 오래 걸려요.</span></li>
+        <li><b>대물</b><span>민어·홍어·13번째 물고기는 걸리면 버둥대요. 2.4초 안에 <em>연타</em>해서 끌어와요!</span></li>
+        <li><b>조심</b><span>빗나가면 근처 물고기들이 놀라서 흩어져요.</span></li>
+        <li><b>진주조개</b><span>바닥 조개가 입을 벌렸을 때 맞히면 <em>+3초</em>. 닫혔을 땐 탱!</span></li>
+        <li><b>왕 뚫어뻥</b><span>10콤보부터 작살이 커져서 맞히기 쉬워져요. 콤보가 끊기면 원래대로.</span></li>
         <li><b>해파리</b><span>해파리를 맞히면 찌릿! 작살이 엉켜서 1초 동안 못 쏴요.</span></li>
         <li><b>피버</b><span>마지막 10초는 물고기가 쏟아지고 작살이 빨라져요.</span></li>
         <li><b>콤보</b><span>3초 안에 이어 잡으면 2연속 1.2배, 3연속 1.5배, 5연속 2배, 10연속 3배.</span></li>
@@ -389,6 +394,13 @@ const Snd = (() => {
         case 'plop':  tone(190, t, .08, 'sine', .15, sfx, 110); break;
         case 'dodge': noise(t, .08, .1, 'bandpass', 2600); break;
         case 'zap':   for (let i = 0; i < 5; i++) tone(500 + Math.random()*900, t + i*.03, .05, 'square', .06); noise(t, .2, .12, 'bandpass', 3200); break;
+        case 'tap':   tone(420 + (a || 0)*700, t, .06, 'square', .07); break;
+        case 'snap':  noise(t, .12, .25, 'highpass', 2000); tone(300, t, .2, 'sine', .15, sfx, 120); break;
+        case 'pearl': [N.E6, N.G6, N.C6*2, N.E6*2].forEach((f, i) => tone(f, t + i*.06, .25, 'sine', .13)); break;
+        case 'pearlOpen': tone(N.G6, t, .15, 'sine', .06); tone(N.C6*2, t + .08, .2, 'sine', .05); break;
+        case 'clang': tone(1400, t, .12, 'triangle', .1, sfx, 900); break;
+        case 'whale': tone(140, t, 1.4, 'sine', .22, sfx, 90); tone(210, t + .3, 1.2, 'sine', .12, sfx, 150); break;
+        case 'big':   [N.C5, N.G5, N.C6, N.G6].forEach((f, i) => tone(f, t + i*.06, .18, 'square', .08)); break;
         case 'fever': [N.C5, N.D5, N.E5, N.G5, N.A5, N.C6].forEach((f, i) => tone(f, t + i*.05, .14, 'square', .07)); break;
         case 'click': tone(640, t, .05, 'sine', .14, sfx, 880); break;
         case 'new':   [N.C6, N.G6].forEach((f, i) => tone(f, t + i*.08, .18, 'triangle', .12)); break;
@@ -473,8 +485,8 @@ let inputMode = 'mouse';
 const COMBO_TIME = 3, HP_SPEED = 820, HP_RANGE = 510;
 const P = { x:400, y:300, vx:0, vy:0, face:1, aim:0, kick:0, happy:0, bubT:0, blink:0 };
 const HP = { st:'ready', x:0, y:0, ang:0, d:0, fishes:[], cd:0, zap:false };
-let jellies = [], feverOn = false, feverCaught = 0;
-const isFever = () => state === 'play' && timeLeft <= 10;
+let jellies = [], feverOn = false, feverCaught = 0, clams = [], whale = null, bigHP = false, bonusSec = 0;
+const isFever = () => state === 'play' && feverOn;   // 진주로 시간이 늘어도 한 번 시작한 피버는 이어진다
 const keys = {};
 const mouse = { x:0, y:0, down:false, seen:false };
 const joy = { id:null, bx:0, by:0, dx:0, dy:0 };
@@ -604,6 +616,7 @@ function updateFish(dt){
         break;
     }
     if (d.ai !== 'school') { f.x += f.vx*dt; f.y += f.vy*dt; }
+    if (f.scareT > 0 && d.ai !== 'school') { f.scareT -= dt; const k = Math.max(0, f.scareT/.7); f.x += f.sx*k*dt; f.y += (d.ai === 'bottom' ? 0 : f.sy*k*dt); if (Math.random() < dt*20) bubble(f.x, f.y, rand(1.5, 3)); }
     if (d.ai !== 'bottom' && d.ai !== 'burrow' && d.ai !== 'school') {
       if (f.y < yLo) { f.y = yLo; if (f.tvy < 0) f.tvy = -f.tvy; if (f.st === 'dart' || d.ai === 'gold') f.vy = Math.abs(f.vy); }
       if (f.y > yHi) { f.y = yHi; if (f.tvy > 0) f.tvy = -f.tvy; if (f.st === 'dart' || d.ai === 'gold') f.vy = -Math.abs(f.vy); }
@@ -618,6 +631,163 @@ function updateFish(dt){
     if ((f.x < -m && f.face < 0) || (f.x > WW + m && f.face > 0) || f.x < -m*2.2 || f.x > WW + m*2.2) { if (f.grp) f.grp.n--; fishes.splice(i, 1); }
   }
   for (let i = groups.length - 1; i >= 0; i--) if (groups[i].n <= 0) groups.splice(i, 1);
+}
+
+/* ───────── 대물 줄다리기 ───────── */
+const BIG_FISH = { mineo:8, hongeo:11, gold:9 }, TUG_TIME = 2.4;
+function startTug(f){
+  const i = fishes.indexOf(f); if (i >= 0) fishes.splice(i, 1);
+  f.alpha = 1; HP.fishes = [f]; HP.st = 'tug';
+  HP.tug = { f, t:0, p:0, need:BIG_FISH[f.id], x:HP.x, y:HP.y, dir: f.face || 1 };
+  fireLatch = 0; shake = Math.max(shake, .2);
+  Snd.play('hit'); Snd.play('rare');
+}
+function updateTug(dt){
+  const tg = HP.tug, f = tg.f, tp = gunTip(); tg.t += dt;
+  const pull = 1 - tg.p/tg.need; // 버둥대며 제 갈 길로 끌고 간다
+  tg.x += tg.dir*70*pull*dt; tg.y += Math.sin(tg.t*7)*30*dt;
+  tg.x = clamp(tg.x, 30, WW - 30); tg.y = clamp(tg.y, topY + 20, floorY - 30);
+  HP.x = tg.x + Math.sin(tg.t*40)*3*pull; HP.y = tg.y + Math.cos(tg.t*33)*3*pull;
+  HP.ang = Math.atan2(HP.y - tp.y, HP.x - tp.x); f.face = tg.dir; f.ph += dt*45;
+  if (Math.random() < dt*20) bubble(HP.x + rand(-20,20), HP.y + rand(-14,14), rand(2,4));
+  if (fireLatch > 0) {
+    fireLatch = 0; tg.p++; Snd.play('tap', tg.p/tg.need); shake = Math.max(shake, .06);
+    for (let k=0;k<3;k++) drop(HP.x, HP.y, rand(-120,120), rand(-150,20));
+    tg.x -= Math.cos(HP.ang)*14; tg.y -= Math.sin(HP.ang)*8;
+  }
+  if (tg.p >= tg.need) { // 낚았다
+    HP.st = 'back'; HP.tug = null;
+    for (let q = pops.length - 1; q >= 0; q--) if (pops[q].key === 'tug') pops.splice(q, 1);
+    pops.push({ x:HP.x, y:HP.y - 72, t:-.1, txt:'낚았다!', big:true, col:'#ffe27a' });
+    catchFish(f); return;
+  }
+  if (tg.t >= TUG_TIME) { // 줄이 툭 끊긴다
+    HP.st = 'back'; HP.tug = null; HP.fishes = [];
+    for (let q = pops.length - 1; q >= 0; q--) if (pops[q].key === 'tug') pops.splice(q, 1);
+    f.x = tg.x; f.y = tg.y; f.alert = 1; f.rot = 0; f.face = tg.dir;
+    if (f.def.ai === 'flee') f.nt = 1.7; if (f.def.ai === 'gold') f.life = Math.max(f.life, 3);
+    fishes.push(f);
+    pops.push({ x:HP.x, y:HP.y - 40, t:0, txt:'툭! 놓쳤다', big:true, col:'#ffd0c4' });
+    Snd.play('snap'); shake = Math.max(shake, .12);
+  }
+}
+function drawTugGauge(){
+  if (HP.st !== 'tug' || !HP.tug) return;
+  const tg = HP.tug, sp = sprOf(tg.f.id), dh = sp ? tg.f.len*SPR_K*sp.h/sp.w : 60;
+  const x = HP.x, y = HP.y - dh*.5 - 34, w = 104, k = tg.p/tg.need, tl = 1 - tg.t/TUG_TIME;
+  g.save(); g.lineJoin = 'round';
+  rr(x - w/2 - 5, y - 13, w + 10, 26, 13); g.fillStyle = '#fff'; g.fill();
+  rr(x - w/2, y - 8, w, 16, 8); g.fillStyle = '#dfe8ee'; g.fill();
+  if (k > 0) { rr(x - w/2, y - 8, Math.max(16, w*k), 16, 8); g.fillStyle = C.sun; g.fill(); }
+  rr(x - w/2, y + 15, w, 5, 2.5); g.fillStyle = 'rgba(255,255,255,.6)'; g.fill();
+  rr(x - w/2, y + 15, w*tl, 5, 2.5); g.fillStyle = tl < .35 ? C.coral : '#fff'; g.fill();
+  const s = 1 + Math.sin(T*18)*.08; g.translate(x, y - 26); g.scale(s, s);
+  g.font = '20px Jua, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = 6; g.strokeStyle = C.ink;
+  const msg = tg.t < .45 ? '걸렸다!' : inputMode === 'touch' ? '발사 버튼 연타!' : '클릭·스페이스 연타!';
+  g.strokeText(msg, 0, 0); g.fillStyle = '#fff'; g.fillText(msg, 0, 0);
+  g.restore();
+}
+
+/* ───────── 빗맞으면 놀라서 흩어짐 ───────── */
+function scareAt(x, y){
+  for (const f of fishes) {
+    if (f.def.ai === 'burrow' || f.def.grade >= 4) continue;
+    const dx = f.x - x, dy = f.y - y, d = Math.hypot(dx, dy); if (d > 170) continue;
+    if (f.grp) { f.grp.scare = 1.2; continue; }
+    const k = 1 - d/170*.5, ux = d > 1 ? dx/d : (Math.random() < .5 ? -1 : 1), uy = d > 1 ? dy/d : 0;
+    f.scareT = .7; f.sx = ux*330*k; f.sy = uy*230*k; f.alert = .6;
+    if (Math.abs(ux) > .3 && f.def.ai !== 'bottom') f.face = ux > 0 ? 1 : -1;
+  }
+}
+
+/* ───────── 진주조개 ───────── */
+function makeClams(){
+  clams = [];
+  const xs = WW > 2000 ? [.2, .5, .8] : [.27, .73];
+  for (const u of xs) clams.push({ x: Math.round(WW*u), st:'closed', t: rand(5, 10), a:0, glint: rand(0,6) });
+}
+function updateClams(dt){
+  for (const c of clams) {
+    c.t -= dt; c.glint += dt;
+    if (c.st === 'closed' && c.t <= 0) { c.st = 'shake'; c.t = .7; }
+    else if (c.st === 'shake' && c.t <= 0) { c.st = 'open'; c.t = 1.9; if (state === 'play' && c.x > camX && c.x < camX + W) Snd.play('pearlOpen'); }
+    else if (c.st === 'open' && c.t <= 0) { c.st = 'closed'; c.t = rand(9, 14); }
+    const want = c.st === 'open' ? .9 : 0; c.a = lerp(c.a, want, Math.min(1, dt*(want ? 12 : 8)));
+  }
+}
+function clamAt(px, py, r){
+  for (const c of clams) { const dx = px - c.x, dy = py - (floorY - 10); if (dx*dx + dy*dy < (22 + r)*(22 + r)) return c; }
+  return null;
+}
+function hitClam(c){
+  HP.st = 'back';
+  if (c.st === 'open' && state === 'play') {
+    timeLeft += 3; bonusSec += 3; c.st = 'closed'; c.t = rand(10, 15); c.a = 0;
+    pops.push({ x:c.x, y:floorY - 60, t:0, txt:'진주! +3초', big:true, col:'#fff' });
+    for (let k=0;k<14;k++) star(c.x, floorY - 16, k % 2 ? '#fff' : '#ffe9f2', rand(3,7), rand(-180,180), rand(-260,-40));
+    Snd.play('pearl'); const e = $('hTimeBox'); e.classList.remove('bump2'); void e.offsetWidth; e.classList.add('bump2');
+  } else {
+    pops.push({ x:c.x, y:floorY - 46, t:0, txt:'탱!', big:false, col:'#fff' }); Snd.play('clang'); scareAt(HP.x, HP.y);
+  }
+}
+function drawClams(){
+  for (const c of clams) {
+    if (c.x < camX - 60 || c.x > camX + W + 60) continue;
+    const y = floorY - 4, jit = c.st === 'shake' ? Math.sin(T*60)*2.5 : 0;
+    g.save(); g.translate(c.x + jit, y); g.lineJoin = 'round';
+    // 아래 껍데기
+    g.beginPath(); g.moveTo(-24, -6); g.quadraticCurveTo(0, 18, 24, -6); g.closePath();
+    g.lineWidth = 5; g.strokeStyle = '#fff'; g.stroke(); g.fillStyle = '#f1a2b6'; g.fill();
+    if (c.a > .15) { // 진주
+      const glow = .5 + Math.sin(c.glint*6)*.2;
+      g.fillStyle = `rgba(255,255,255,${glow})`; circ(0, -9, 14); g.fill();
+      g.fillStyle = '#fffaf2'; circ(0, -8, 7.5); g.fill(); g.strokeStyle = '#f0d9e4'; g.lineWidth = 1.5; g.stroke();
+      g.fillStyle = '#fff'; circ(-2.5, -10.5, 2.4); g.fill();
+    }
+    // 위 껍데기 (입을 벌린다)
+    g.save(); g.translate(-22, -6); g.rotate(-c.a);
+    g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(22, -30, 46, 0); g.closePath();
+    g.lineWidth = 5; g.strokeStyle = '#fff'; g.stroke(); g.fillStyle = '#f6b6c6'; g.fill();
+    g.strokeStyle = 'rgba(201,90,120,.45)'; g.lineWidth = 1.6;
+    for (let i = -2; i <= 2; i++) { g.beginPath(); g.moveTo(23, -1); g.lineTo(23 + i*8, -18 + Math.abs(i)*3); g.stroke(); }
+    g.restore();
+    g.restore();
+  }
+}
+
+/* ───────── 고래 ───────── */
+function startWhale(side){
+  whale = { t:0, dur:10, dir: -side, y: lerp(topY, floorY, rand(.3, .42)) };
+  toast('고래다! 물고기 떼를 몰고 온다!', 3); Snd.play('whale');
+  const sx = side;
+  queue.push({ t:1.6, id:'school', side:sx });
+  for (let i=0;i<6;i++) queue.push({ t:1.9 + i*.22, id: i % 2 ? 'chamdom' : 'jeoneo', side:sx, x: edgeX(sx, 80), y: clamp(whale.y + rand(-120, 140), topY + 50, floorY - 70) });
+}
+function updateWhale(dt){ if (!whale) return; whale.t += dt; if (whale.t > whale.dur) whale = null; else if (Math.random() < dt*3) { const p = whalePos(); bubble(camX + p.x + p.w*.18*whale.dir, p.y - p.h*.5, rand(3,6)); } }
+function whalePos(){
+  const w = Math.min(W*.85, 820), h = w*.36, k = whale.t/whale.dur;
+  const x = whale.dir > 0 ? lerp(-w*.7, W + w*.7, k) : lerp(W + w*.7, -w*.7, k);
+  return { x, y: whale.y + Math.sin(whale.t*.8)*14, w, h };
+}
+function drawWhale(){
+  if (!whale) return;
+  const p = whalePos(), w = p.w, h = p.h, a = Math.min(1, whale.t*1.5, (whale.dur - whale.t)*1.5);
+  g.save(); g.globalAlpha = .55*a; g.translate(p.x, p.y); g.scale(whale.dir, 1);
+  const tail = Math.sin(whale.t*2.2)*.25;
+  g.save(); g.translate(-w*.46, -h*.02); g.rotate(tail); // 꼬리
+  g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(-w*.1, -h*.05, -w*.16, -h*.42); g.quadraticCurveTo(-w*.1, -h*.12, -w*.05, 0); g.quadraticCurveTo(-w*.1, h*.12, -w*.16, h*.38); g.quadraticCurveTo(-w*.1, h*.05, 0, 0);
+  g.fillStyle = '#255a8c'; g.fill(); g.restore();
+  g.beginPath(); g.ellipse(0, 0, w*.5, h*.5, 0, 0, Math.PI*2); g.fillStyle = '#2b679c'; g.fill();          // 몸
+  g.save(); g.beginPath(); g.ellipse(0, 0, w*.5, h*.5, 0, 0, Math.PI*2); g.clip();
+  g.beginPath(); g.ellipse(w*.06, h*.42, w*.44, h*.3, 0, 0, Math.PI*2); g.fillStyle = '#a8d2ec'; g.fill();   // 배
+  g.strokeStyle = 'rgba(43,103,156,.5)'; g.lineWidth = 3;
+  for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(w*.38 - i*w*.07, h*.2); g.lineTo(w*.32 - i*w*.07, h*.5); g.stroke(); }
+  g.restore();
+  g.beginPath(); g.ellipse(w*.04, h*.28, w*.1, h*.07, .5, 0, Math.PI*2); g.fillStyle = '#255a8c'; g.fill();   // 지느러미
+  g.fillStyle = '#fff'; circ(w*.33, -h*.05, h*.07); g.fill(); g.fillStyle = C.ink; circ(w*.335, -h*.05, h*.045); g.fill(); g.fillStyle = '#fff'; circ(w*.325, -h*.07, h*.016); g.fill();
+  g.strokeStyle = C.ink; g.lineWidth = 3; g.beginPath(); g.arc(w*.4, h*.1, h*.1, .2, 1.4); g.stroke();
+  g.fillStyle = 'rgba(255,170,190,.7)'; g.beginPath(); g.ellipse(w*.3, h*.12, h*.06, h*.035, 0, 0, Math.PI*2); g.fill();
+  g.restore();
 }
 
 /* ───────── 해파리 (잡을 수 없고, 맞히면 작살이 엉킨다) ───────── */
@@ -768,17 +938,20 @@ function updateHarpoon(dt){
   if (fireLatch > 0) fireLatch -= dt;
   const tp = gunTip();
   if (HP.st === 'ready') { HP.x = tp.x; HP.y = tp.y; HP.ang = P.aim; if (wantFire()) fire(); return; }
+  if (HP.st === 'tug') { updateTug(dt); return; }
   if (HP.st === 'fly') {
     const dist = HP_SPEED*(isFever() ? 1.35 : 1)*dt, n = Math.max(1, Math.ceil(dist/7)), sx = Math.cos(HP.ang)*dist/n, sy = Math.sin(HP.ang)*dist/n;
     for (let i=0;i<n;i++) {
       HP.x += sx; HP.y += sy; HP.d += dist/n;
       const j = jellyAt(HP.x, HP.y, 6);
       if (j) { zapJelly(j); return; }
-      const f = fishAt(HP.x, HP.y, 9);
-      if (f) { catchFish(f); HP.st = 'back'; return; }
+      const c = clamAt(HP.x, HP.y, bigHP ? 12 : 5);
+      if (c) { hitClam(c); return; }
+      const f = fishAt(HP.x, HP.y, bigHP ? 22 : 9);
+      if (f) { if (BIG_FISH[f.id] && state === 'play') startTug(f); else { catchFish(f); HP.st = 'back'; } return; }
       if (HP.d >= HP_RANGE || HP.y < topY - 24 || HP.y > floorY + 4 || HP.x < -30 || HP.x > WW + 30) {
         HP.st = 'back'; if (HP.y > floorY) { for (let k=0;k<6;k++) puff(HP.x + rand(-10,10), floorY - 2); }
-        if (!HP.fishes.length) Snd.play('plop'); return;
+        if (!HP.fishes.length) { Snd.play('plop'); if (state === 'play') scareAt(HP.x, HP.y); } return;
       }
     }
     if (Math.random() < dt*40) bubble(HP.x, HP.y, rand(1.5, 3));
@@ -800,6 +973,7 @@ function catchFish(f){
   f.alpha = 1; HP.fishes = [f];
   if (state !== 'play') return;
   combo++; comboT = COMBO_TIME; if (combo > maxCombo) maxCombo = combo;
+  if (combo === 10) { toast('10콤보! 왕 뚫어뻥!', 4); Snd.play('big'); }
   const mult = comboMult(combo), pts = Math.round(d.score * mult * (doubleT > 0 ? 2 : 1));
   score += pts; caught[f.id] = (caught[f.id] || 0) + 1; caughtN++; if (isFever()) feverCaught++;
   const first = !store.dex[f.id];
@@ -845,12 +1019,14 @@ function buildEvents(){
   // 처음엔 쉬운 것, 13번째 물고기는 뒤쪽에
   const k0 = items.findIndex(x => x === 'school' || x === 'school2' || x === 'mineo'); [items[0], items[k0]] = [items[k0], items[0]];
   items.splice(4 + Math.floor(Math.random()*4), 0, 'gold');
-  events = items.map((type, i) => ({ t: 9 + i*8.4 + rand(-1.5, 1.5), type }));
+  items.splice(2 + Math.floor(Math.random()*3), 0, 'whale');
+  events = items.map((type, i) => ({ t: 8 + i*7.6 + rand(-1.2, 1.2), type }));
 }
 function sideAway(){ return P.x - camX < W/2 ? 1 : -1; }   // 잠수부에서 먼 쪽
 function edgeX(side, pad){ return side < 0 ? Math.max(-pad, camX - pad) : Math.min(WW + pad, camX + W + pad); }
 function runEvent(type){
   const side = sideAway();
+  if (type === 'whale') { startWhale(side); return; }
   if (type === 'school') { const y = clamp(P.y + rand(-140, 140), topY + 60, floorY - 80); for (let i=0;i<10;i++) queue.push({ t: i*.16, id:'jeoneo', side, x: edgeX(side, 70), y: y + rand(-40, 40) }); toast('전어 떼가 몰려온다!', 2); Snd.play('rare'); }
   else if (type === 'school2') { makeSchool(13, { side, x: edgeX(side, 150), y: clamp(P.y + rand(-120, 120), topY + 70, floorY - 90) }); toast('웅어 떼다! 줄줄이 온다!', 2); Snd.play('rare'); }
   else if (type === 'double') { doubleT = 10; toast('지금부터 10초, 점수 2배!', 4); Snd.play('double'); $('dbl').hidden = false; }
@@ -863,7 +1039,7 @@ function rareToast(id, msg){ const d = FISH[id]; toast(store.dex[id] ? msg : '�
 function updateSpawner(dt){
   spawnT -= dt;
   if (spawnT <= 0) { const fv = isFever(); spawnT = fv ? .12 : .32; if (fishes.length < targetCount()*(fv ? 1.6 : 1)) spawnRandom(false); }
-  for (let i = queue.length - 1; i >= 0; i--) { const q = queue[i]; q.t -= dt; if (q.t <= 0) { makeFish(q.id, q); queue.splice(i, 1); } }
+  for (let i = queue.length - 1; i >= 0; i--) { const q = queue[i]; q.t -= dt; if (q.t <= 0) { if (q.id === 'school') makeSchool(10, { side:q.side, x: edgeX(q.side, 150), y: whale ? clamp(whale.y + 40, topY + 70, floorY - 90) : undefined }); else makeFish(q.id, q); queue.splice(i, 1); } }
   if (state !== 'play') return;
   const el = 90 - timeLeft;
   while (events.length && events[0].t <= el) runEvent(events.shift().type);
@@ -878,11 +1054,12 @@ function resetWorld(){
   fishes = []; groups = []; parts = []; pops = []; queue = []; jellies = [];
   HP.st = 'ready'; HP.fishes = []; HP.cd = 0; HP.zap = false;
   for (let i = 0; i < jellyTarget(); i++) makeJelly(true);
+  makeClams(); whale = null; HP.tug = null; bigHP = false;
   const n = targetCount(); let guard = 0; while (fishes.length < n && guard++ < 80) spawnRandom(true);
 }
 function startGame(){
   Snd.unlock(); resize(); resetWorld();
-  state = 'play'; timeLeft = 90; score = 0; combo = 0; comboT = 0; maxCombo = 0; doubleT = 0; caught = {}; caughtN = 0; newDex = []; newBest = false; seenToast = {}; lastTick = 0; shake = 0; feverOn = false; feverCaught = 0;
+  state = 'play'; timeLeft = 90; score = 0; combo = 0; comboT = 0; maxCombo = 0; doubleT = 0; caught = {}; caughtN = 0; newDex = []; newBest = false; seenToast = {}; lastTick = 0; shake = 0; feverOn = false; feverCaught = 0; bonusSec = 0;
   P.x = WW/2; P.y = lerp(topY, floorY, .5); P.vx = P.vy = 0; P.aim = 0; P.face = 1; camX = clamp(P.x - W/2, 0, WW - W);
   // 시작 자리 바로 옆은 비워 둔다
   fishes = fishes.filter(f => f.grp || Math.hypot(f.x - P.x, f.y - P.y) > 120);
@@ -897,7 +1074,8 @@ function startGame(){
   toast('출발! 뽁뽁 작살을 쏴요', 1);
 }
 function endGame(){
-  state = 'over'; overT = 0; timeLeft = 0; app.classList.remove('playing'); $('touchUI').hidden = true; showJoy(false);
+  if (HP.st === 'tug') { HP.st = 'back'; HP.tug = null; HP.fishes = []; }
+  state = 'over'; overT = 0; timeLeft = 0; bigHP = false; app.classList.remove('playing'); $('touchUI').hidden = true; showJoy(false);
   mouse.down = false; fireHeld = false; aimT.id = null; aimT.down = false; joy.id = null;
   const best = score > (store.best || 0); if (best) store.best = score; newBest = best; save();
   Snd.music(null); Snd.play('over'); updateHud(true);
@@ -996,6 +1174,7 @@ function drawBackdrop(){
   // 먼 언덕
   g.fillStyle = 'rgba(30,98,150,.6)';
   for (const m of SCN.far) { const x = m.x - camX*.35; if (x + m.w < -20 || x - m.w > W + 20) continue; g.beginPath(); g.ellipse(x, floorY + 12, m.w, m.h, 0, Math.PI, 0); g.fill(); }
+  drawWhale();
   // 중간 바위
   g.fillStyle = '#2a6da3';
   for (const m of SCN.rocks) { const x = m.x - camX*.7 + 300; if (x + m.w < -20 || x - m.w > W + 20) continue; g.beginPath(); g.ellipse(x, floorY + 10, m.w, m.h*1.25, 0, Math.PI, 0); g.fill(); }
@@ -1130,7 +1309,9 @@ function drawDiver(){
     if (!O) { g.fillStyle = C.sun; rr(17, -6, 5, 12, 1); g.fill(); g.fillStyle = C.ink; rr(14, 4, 5, 8, 2); g.fill(); }
     if (loaded) { // 장전된 작살
       g.beginPath(); g.moveTo(34, 0); g.lineTo(46, 0); if (O) { g.strokeStyle = '#fff'; g.lineWidth = 9; } else { g.strokeStyle = '#8fa3bd'; g.lineWidth = 3.4; } g.stroke();
-      g.beginPath(); g.moveTo(44, -3); g.quadraticCurveTo(48, -8.5, 53, -8.5); g.lineTo(53, 8.5); g.quadraticCurveTo(48, 8.5, 44, 3); g.closePath(); paint(C.coral);
+      if (bigHP) { g.save(); g.translate(46, 0); g.scale(1.7, 1.7); g.translate(-46, 0); }
+      g.beginPath(); g.moveTo(44, -3); g.quadraticCurveTo(48, -8.5, 53, -8.5); g.lineTo(53, 8.5); g.quadraticCurveTo(48, 8.5, 44, 3); g.closePath(); paint(bigHP ? C.sun : C.coral);
+      if (bigHP) g.restore();
     }
     g.restore();
   }
@@ -1144,12 +1325,12 @@ function drawHarpoon(){
   g.lineCap = 'round'; g.beginPath(); g.moveTo(tp.x, tp.y); g.quadraticCurveTo(mx, my, HP.x - Math.cos(HP.ang)*16, HP.y - Math.sin(HP.ang)*16);
   g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 5; g.stroke(); g.strokeStyle = '#f6c445'; g.lineWidth = 2.2; g.stroke();
   for (const f of HP.fishes) drawFish(f, HP.x + Math.cos(HP.ang)*f.len*.18, HP.y + Math.sin(HP.ang)*f.len*.18, Math.sin(T*30)*.14, .92);
-  g.save(); g.translate(HP.x, HP.y); g.rotate(HP.ang); g.lineJoin = 'round';
+  g.save(); g.translate(HP.x, HP.y); g.rotate(HP.ang); g.lineJoin = 'round'; if (bigHP) g.scale(1.9, 1.9);
   for (let pass = 0; pass < 2; pass++) {
     const O = pass === 0;
     g.beginPath(); g.moveTo(-18, 0); g.lineTo(-2, 0); if (O) { g.strokeStyle = '#fff'; g.lineWidth = 9; } else { g.strokeStyle = '#8fa3bd'; g.lineWidth = 3.4; } g.stroke();
     g.beginPath(); g.moveTo(-4, -3); g.quadraticCurveTo(0, -9, 6, -9); g.lineTo(6, 9); g.quadraticCurveTo(0, 9, -4, 3); g.closePath();
-    if (O) { g.fillStyle = '#fff'; g.strokeStyle = '#fff'; g.lineWidth = 7; g.fill(); g.stroke(); } else { g.fillStyle = C.coral; g.fill(); }
+    if (O) { g.fillStyle = '#fff'; g.strokeStyle = '#fff'; g.lineWidth = 7; g.fill(); g.stroke(); } else { g.fillStyle = bigHP ? C.sun : C.coral; g.fill(); }
   }
   g.restore();
 }
@@ -1204,10 +1385,11 @@ function render(){
   for (const f of fishes) if (f.def.ai === 'burrow' && f.x > camX - 200 && f.x < camX + W + 200) drawFish(f);
   g.restore();
   drawSand();
+  g.save(); g.translate(-camX, 0); drawClams(); g.restore();
   g.save(); g.translate(-camX, 0);
   for (const f of fishes) { if (f.def.ai === 'burrow') continue; if (f.x < camX - 200 || f.x > camX + W + 200) continue; drawFish(f); }
   for (const j of jellies) if (j.x > camX - 60 && j.x < camX + W + 60) drawJelly(j);
-  drawAim(); drawHarpoon(); drawDiver(); drawParts();
+  drawAim(); drawHarpoon(); drawDiver(); drawParts(); drawTugGauge();
   g.restore();
   drawFront();
   if (doubleT > 0) { const a = .16 + Math.sin(T*6)*.05, vg = g.createRadialGradient(W/2, H/2, Math.min(W, H)*.36, W/2, H/2, Math.max(W, H)*.72); vg.addColorStop(0, 'rgba(246,196,69,0)'); vg.addColorStop(1, `rgba(246,196,69,${a*2})`); g.fillStyle = vg; g.fillRect(0, 0, W, H); }
@@ -1223,14 +1405,15 @@ function update(dt, real){
   T += dt;
   if (state === 'play') {
     timeLeft -= dt;
-    if (comboT > 0) { comboT -= dt; if (comboT <= 0) { combo = 0; } }
+    if (comboT > 0 && HP.st !== 'tug') { comboT -= dt; if (comboT <= 0) { combo = 0; } }
+    bigHP = combo >= 10;
     if (doubleT > 0) { doubleT -= dt; if (doubleT <= 0) $('dbl').hidden = true; }
     const sec = Math.ceil(timeLeft); if (sec <= 10 && sec !== lastTick && sec > 0) { lastTick = sec; Snd.play('tick'); if (sec === 10) Snd.hurry(true); }
     if (timeLeft <= 10 && !feverOn) { feverOn = true; $('fever').hidden = false; $('dbl').style.top = '170px'; toast('피버 타임! 물고기가 쏟아진다!', 5); Snd.play('fever'); for (let i = 0; i < 6; i++) spawnRandom(false); }
     if (timeLeft <= 0) { endGame(); return; }
   } else if (state === 'over') { overT += real || dt; if (overT > 1.3) { state = 'done'; showResult(); } }
   if (shake > 0) shake -= dt;
-  updatePlayer(dt); updateHarpoon(dt); updateSpawner(dt); updateFish(dt); updateJellies(dt); updateParts(dt);
+  updatePlayer(dt); updateHarpoon(dt); updateSpawner(dt); updateFish(dt); updateJellies(dt); updateClams(dt); updateWhale(dt); updateParts(dt);
   if (Math.random() < dt*1.6) bubble(camX + rand(0, W), floorY - rand(0, 40), rand(2, 5));
   const look = state === 'play' ? Math.cos(P.aim)*W*.07 : 0, camTo = state === 'menu' ? WW/2 - W/2 : P.x - W/2 + look;
   camX = lerp(camX, clamp(camTo, 0, Math.max(0, WW - W)), Math.min(1, dt*5));
@@ -1250,6 +1433,9 @@ function frame(now){
 function showJoy(on){ $('joyBase').hidden = !on; $('joyKnob').hidden = !on; $('joyHint').hidden = on; }
 function setMode(m){ if (inputMode === m) return; inputMode = m; app.classList.toggle('mouse', m === 'mouse'); if (state === 'play') $('touchUI').hidden = m !== 'touch'; }
 app.classList.add('mouse');
+// 손가락으로 누르면 바로 손가락 조작 화면으로 (시작 버튼을 손가락으로 눌러도 알아챈다)
+if (window.matchMedia && matchMedia('(pointer:coarse)').matches) setMode('touch');
+window.addEventListener('pointerdown', e => { if (e.pointerType === 'touch' || e.pointerType === 'pen') setMode('touch'); else if (e.pointerType === 'mouse') setMode('mouse'); }, true);
 function local(e){ const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
 cv.addEventListener('pointerdown', e => {
   Snd.unlock(); if (state !== 'play') return; e.preventDefault();
@@ -1322,6 +1508,7 @@ async function share(){
 const bot = { on:false, speed:1, ix:0, iy:0, aim:0, fire:false, skill:1, target:null };
 function botThink(){
   if (state !== 'play') { bot.fire = false; return; }
+  if (HP.st === 'tug') { bot.tapT = (bot.tapT || 0) - 1/60; if (bot.tapT <= 0) { fireLatch = .3; bot.tapT = .12 + (1 - bot.skill)*.16; } bot.fire = false; bot.ix = bot.iy = 0; return; }
   const pv = gunPivot(); let best = null, bs = -1;
   for (const f of fishes) {
     if (f.y > floorY + 10) continue; const dx = f.x - pv.x, dy = f.y - pv.y, dist = Math.hypot(dx, dy);
@@ -1342,7 +1529,8 @@ function botThink(){
   if (dist < HP_RANGE*.85 && HP.st === 'ready') bot.fire = !(bot.wait > 0);
 }
 if (AUTOTEST) window.__g = {
-  state: () => ({ feverCaught, jellies: jellies.length, state, timeLeft, score, combo, maxCombo, caught, caughtN, fish: fishes.length, hp: HP.st, px: P.x, py: P.y, camX, W, H, WW, S, best: store.best, dex: Object.keys(store.dex).length, newBest, events: events.length, parts: parts.length }),
+  tug: () => HP.tug && { p: HP.tug.p, t: HP.tug.t, need: HP.tug.need }, clams: () => clams, floorY: () => floorY,
+  state: () => ({ bonusSec, hp2: HP.st, bigHP, whale: !!whale, feverCaught, jellies: jellies.length, state, timeLeft, score, combo, maxCombo, caught, caughtN, fish: fishes.length, hp: HP.st, px: P.x, py: P.y, camX, W, H, WW, S, best: store.best, dex: Object.keys(store.dex).length, newBest, events: events.length, parts: parts.length }),
   start: startGame, end: endGame, pause: pauseGame, resume: resumeGame, menu: goMenu,
   bot(on, speed, skill){ bot.on = on; bot.speed = speed || 1; bot.skill = skill == null ? 1 : skill; },
   setTime(t){ timeLeft = t; }, fishes: () => fishes.map(f => ({ id:f.id, x:f.x, y:f.y, st:f.st })),
