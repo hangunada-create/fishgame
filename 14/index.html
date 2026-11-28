@@ -61,6 +61,19 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--sun);outline-offset
 #comboTxt.pop{animation:bump .22s ease-out}
 #comboBar{width:86px;height:6px;border-radius:99px;background:rgba(255,255,255,.45);overflow:hidden}
 #comboBar i{display:block;height:100%;width:100%;background:#fff;border-radius:99px}
+#order{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:66px;background:var(--card);border-radius:16px;padding:6px 10px 7px;box-shadow:0 0 0 3px #fff,0 4px 0 3px rgba(20,45,80,.28);pointer-events:none;min-width:118px;display:grid;gap:2px}
+#order .oh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;color:var(--mute);white-space:nowrap}
+#order .oh b{font-weight:400;color:var(--coral-d);font-size:14px}
+#order.done{background:var(--sun)}
+#order.done .oh{color:var(--ink)}
+#order.pop{animation:bump .25s ease-out}
+.orow{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:5px;font-size:14px;white-space:nowrap}
+.orow img{width:40px;height:20px;object-fit:contain}
+.orow span{font-size:12.5px;color:var(--mute)}
+.orow b{font-weight:400;font-variant-numeric:tabular-nums}
+.orow.ok{opacity:.45}
+.orow.ok b{color:var(--mint)}
+#fever{position:absolute;left:50%;top:132px;transform:translateX(-50%);background:linear-gradient(90deg,#ef6f5a,#f39a4a,#ee5d8c);color:#fff;border-radius:999px;padding:3px 16px 2px;font-size:18px;box-shadow:0 0 0 3px #fff;pointer-events:none;white-space:nowrap;animation:beat .35s ease-in-out infinite alternate}
 #dbl{position:absolute;left:50%;top:132px;transform:translateX(-50%);background:var(--coral);color:#fff;border-radius:999px;padding:2px 14px 1px;font-size:16px;box-shadow:0 0 0 3px #fff;pointer-events:none;white-space:nowrap}
 #toast{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);pointer-events:none;background:var(--card);color:var(--ink);border-radius:18px;padding:9px 18px 7px;font-size:clamp(17px,4.6vw,22px);text-align:center;
   box-shadow:0 0 0 4px #fff,0 6px 0 4px rgba(20,45,80,.28);max-width:min(88%,420px);word-break:keep-all;opacity:0}
@@ -115,6 +128,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--sun);outline-offset
 .rscore small{font-size:22px;color:var(--mute)}
 .newrec{align-self:center;background:var(--coral);color:#fff;border-radius:999px;padding:2px 14px 1px;font-size:16px;animation:beat .5s ease-in-out infinite alternate}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats.two{margin-top:-7px}
 .stats div{background:var(--foam);border-radius:14px;padding:7px 4px 5px;font-size:13px;color:var(--mute);min-width:0}
 .stats b{display:block;font-weight:400;font-size:21px;color:var(--ink);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .catch{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:9px 7px}
@@ -146,7 +160,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--sun);outline-offset
 .sw[aria-checked="true"]::after{left:31px}
 .snd.light{color:#fff;-webkit-text-stroke:4px var(--ink);paint-order:stroke fill}
 @media (max-height:560px){.logo h1{font-size:clamp(40px,11vh,64px)}.logo .sub{font-size:18px}.btn.big{font-size:22px;padding:9px 18px 7px}.menu{gap:8px}}
-@media (prefers-reduced-motion:reduce){#hTimeBox.low,.newrec{animation:none}}
+@media (prefers-reduced-motion:reduce){#hTimeBox.low,.newrec,#fever{animation:none}}
 </style>
 </head>
 <body>
@@ -160,7 +174,9 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--sun);outline-offset
     <button id="pauseBtn" aria-label="일시정지"><i></i></button>
   </div>
   <div id="combo" hidden><div id="comboTxt">2콤보</div><div id="comboBar"><i id="comboFill"></i></div></div>
+  <div id="order" hidden><div class="oh">오늘의 주문 <b id="oBonus">+300</b></div><div id="oList"></div></div>
   <div id="dbl" hidden>점수 2배!</div>
+  <div id="fever" hidden>피버 타임!</div>
   <div id="toast" aria-live="polite"></div>
 
   <div id="touchUI" hidden>
@@ -194,7 +210,10 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--sun);outline-offset
         <li><b>목표</b><span>90초 동안 <em>뽁뽁 작살</em>로 물고기를 잡아 점수를 모아요. 끝이 뚫어뻥이라 물고기는 안 다쳐요.</span></li>
         <li><b>PC</b><span>WASD·방향키로 이동, 마우스로 조준, 클릭이나 스페이스로 발사. ESC는 일시정지.</span></li>
         <li><b>모바일</b><span>왼쪽 아래를 끌어서 이동. 물고기를 톡 누르면 그쪽으로 발사. 발사 버튼은 가는 방향으로 쏴요.</span></li>
-        <li><b>작살</b><span>한 번에 하나만 나가요. 멀리 빗나가면 돌아오는 데 오래 걸려요.</span></li>
+        <li><b>꼬치</b><span>작살은 물고기를 뚫고 계속 날아가요. 한 줄로 꿰면 2마리째 ×2, 3마리째 ×3… 최대 5마리. 한 번에 하나만 나가니 신중하게!</span></li>
+        <li><b>주문서</b><span>왼쪽 위 <em>오늘의 주문</em>을 다 채우면 보너스! 주문받은 물고기 위엔 노란 표시가 떠요.</span></li>
+        <li><b>해파리</b><span>해파리를 맞히면 찌릿! 작살이 엉켜서 1초 동안 못 쏴요.</span></li>
+        <li><b>피버</b><span>마지막 10초는 물고기가 쏟아지고 작살이 빨라져요.</span></li>
         <li><b>콤보</b><span>3초 안에 이어 잡으면 2연속 1.2배, 3연속 1.5배, 5연속 2배, 10연속 3배.</span></li>
         <li><b>귀한 놈</b><span>민어는 가까이 가면 달아나요. 밴댕이는 멀리서 쏘면 피해요. 붕장어는 모래에서, 홍어는 가끔 지나가요.</span></li>
       </ul>
@@ -222,6 +241,11 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--sun);outline-offset
         <div><b id="rCount">0</b>잡은 물고기</div>
         <div><b id="rCombo">0</b>최고 콤보</div>
         <div><b id="rRare">-</b>가장 귀한 놈</div>
+      </div>
+      <div class="stats two">
+        <div><b id="rSkew">0</b>최대 꼬치</div>
+        <div><b id="rOrder">0</b>주문 완료</div>
+        <div><b id="rFever">0</b>피버 때 잡음</div>
       </div>
       <div class="catch" id="rCatch"></div>
       <p id="rDexMsg" style="text-align:center"></p>
@@ -382,6 +406,10 @@ const Snd = (() => {
         case 'tick':  tone(1100, t, .04, 'sine', .13); break;
         case 'plop':  tone(190, t, .08, 'sine', .15, sfx, 110); break;
         case 'dodge': noise(t, .08, .1, 'bandpass', 2600); break;
+        case 'skewer':{ const k = Math.min(a || 2, 5); for (let i = 0; i < k; i++) tone(N.C6*Math.pow(1.122, i*2), t + i*.045, .1, 'triangle', .1); break; }
+        case 'zap':   for (let i = 0; i < 5; i++) tone(500 + Math.random()*900, t + i*.03, .05, 'square', .06); noise(t, .2, .12, 'bandpass', 3200); break;
+        case 'order': [N.C5, N.E5, N.G5, N.C6, N.E6].forEach((f, i) => tone(f, t + i*.07, .2, 'triangle', .13)); tone(N.G6, t + .4, .4, 'sine', .1); break;
+        case 'fever': [N.C5, N.D5, N.E5, N.G5, N.A5, N.C6].forEach((f, i) => tone(f, t + i*.05, .14, 'square', .07)); break;
         case 'click': tone(640, t, .05, 'sine', .14, sfx, 880); break;
         case 'new':   [N.C6, N.G6].forEach((f, i) => tone(f, t + i*.08, .18, 'triangle', .12)); break;
         case 'over':  [N.G5, N.E5, N.C5].forEach((f, i) => tone(f, t + i*.16, .22, 'triangle', .16)); [N.C5, N.E5, N.G5, N.C6].forEach(f => tone(f, t + .62, .7, 'triangle', .1)); break;
@@ -462,9 +490,11 @@ let state = 'menu';            // menu | play | pause | over(끝! 글자) | done
 let T = 0, timeLeft = 90, score = 0, combo = 0, comboT = 0, maxCombo = 0, doubleT = 0, caught = {}, caughtN = 0, newDex = [], newBest = false;
 let fishes = [], groups = [], parts = [], pops = [], queue = [], events = [], spawnT = 0, camX = 0, shake = 0, lastTick = 0, overT = 0, seenToast = {};
 let inputMode = 'mouse';
-const COMBO_TIME = 3, HP_SPEED = 820, HP_RANGE = 510;
+const COMBO_TIME = 3, HP_SPEED = 820, HP_RANGE = 510, SKEW_MAX = 5;
 const P = { x:400, y:300, vx:0, vy:0, face:1, aim:0, kick:0, happy:0, bubT:0, blink:0 };
-const HP = { st:'ready', x:0, y:0, ang:0, d:0, fish:null, cd:0 };
+const HP = { st:'ready', x:0, y:0, ang:0, d:0, fishes:[], cd:0, zap:false };
+let orderFeedT = 0, jellies = [], order = null, ordersN = 0, ordersDone = 0, skewMax = 0, feverOn = false, feverCaught = 0;
+const isFever = () => state === 'play' && timeLeft <= 10;
 const keys = {};
 const mouse = { x:0, y:0, down:false, seen:false };
 const joy = { id:null, bx:0, by:0, dx:0, dy:0 };
@@ -503,10 +533,10 @@ function makeSchool(n, o){
 function countOf(id){ let n = 0; for (const f of fishes) if (f.id === id) n++; return n; }
 function spawnRandom(initial){
   let total = 0; const cand = [];
-  for (const id of DEX_IDS) { const d = FISH[id]; if (d.w > 0 && countOf(id) < d.max) { cand.push(id); total += d.w; } }
+  for (const id of DEX_IDS) { const d = FISH[id]; if (d.w > 0 && countOf(id) < maxOf(id)) { const w = d.w*(wanted(id) ? 2.5 : 1); cand.push([id, w]); total += w; } }
   if (!cand.length) return;
-  let r = Math.random()*total, id = cand[0];
-  for (const c of cand) { r -= FISH[c].w; if (r <= 0) { id = c; break; } }
+  let r = Math.random()*total, id = cand[0][0];
+  for (const [c, w] of cand) { r -= w; if (r <= 0) { id = c; break; } }
   const x = initial ? rand(60, WW - 60) : null;
   if (id === 'ungeo') makeSchool(4 + (Math.random()*3|0), initial ? { x } : null);
   else if (id === 'baendaengi') { const side = Math.random() < .5 ? -1 : 1, y = yBand(FISH[id]), bx = initial ? x : (side < 0 ? -60 : WW + 60);
@@ -514,6 +544,7 @@ function spawnRandom(initial){
   else makeFish(id, initial ? { x } : null);
 }
 function targetCount(){ return clamp(Math.round(WW*(floorY - topY) / 46000), 12, 30); }
+function maxOf(id){ return isFever() ? Math.ceil(FISH[id].max*1.6) : FISH[id].max; }
 
 /* ───────── 물고기 움직임 ───────── */
 function updateFish(dt){
@@ -609,6 +640,111 @@ function updateFish(dt){
   for (let i = groups.length - 1; i >= 0; i--) if (groups[i].n <= 0) groups.splice(i, 1);
 }
 
+/* ───────── 해파리 (잡을 수 없고, 맞히면 작살이 엉킨다) ───────── */
+function jellyTarget(){ const base = WW > 2000 ? 1 : 0; if (state !== 'play') return 2 + base; return (timeLeft > 60 ? 2 : timeLeft > 30 ? 3 : 4) + base; }
+function makeJelly(initial){
+  let x, tries = 0;
+  do { x = initial ? rand(80, WW - 80) : (Math.random() < .5 ? clamp(camX - 60, 60, WW - 60) : clamp(camX + W + 60, 60, WW - 60)); } while (tries++ < 8 && Math.abs(x - P.x) < 220);
+  const y = lerp(topY + 70, floorY - 110, Math.random());
+  jellies.push({ x, y, by:y, t:rand(0,6), r:rand(19,25), vx:rand(-16,16), col: Math.random() < .5 ? '#f5a3c7' : '#c4a6f2', zap:0, fade: initial ? 1 : 0 });
+}
+function updateJellies(dt){
+  while (jellies.length < jellyTarget()) makeJelly(false);
+  for (const j of jellies) {
+    j.t += dt; if (j.zap > 0) j.zap -= dt; if (j.fade < 1) j.fade = Math.min(1, j.fade + dt);
+    const pulse = Math.max(0, Math.sin(j.t*2.2)); // 오므렸다 펴며 살짝 떠오른다
+    j.by -= pulse*22*dt; j.by += 9*dt; j.by = clamp(j.by, topY + 60, floorY - 90);
+    j.y = j.by + Math.sin(j.t*.7)*14; j.x += j.vx*dt;
+    if (j.x < 60) j.vx = Math.abs(j.vx); if (j.x > WW - 60) j.vx = -Math.abs(j.vx);
+  }
+}
+function jellyAt(px, py, r){
+  for (const j of jellies) {
+    if (j.fade < .6) continue;
+    const dx = px - j.x, dy = py - j.y;
+    if (dx*dx + dy*dy < (j.r + r)*(j.r + r)) return j;                       // 갓
+    if (dy > 0 && dy < j.r*1.7 && Math.abs(dx) < j.r*.75 + r*.5) return j;      // 촉수
+  }
+  return null;
+}
+function zapJelly(j){
+  j.zap = .7; HP.zap = true; HP.st = 'back';
+  Snd.play('zap'); shake = Math.max(shake, .14);
+  pops.push({ x:HP.x, y:HP.y - 20, t:0, txt:'찌릿!', big:true, col:'#fff3a8' });
+  for (let k=0;k<8;k++) star(HP.x, HP.y, '#fff3a8', rand(3,6), rand(-160,160), rand(-160,160));
+}
+function drawJelly(j){
+  const sq = 1 + Math.sin(j.t*2.2)*.08, r = j.r, zap = j.zap > 0;
+  g.save(); g.translate(j.x + (zap ? (Math.random() - .5)*4 : 0), j.y); g.globalAlpha = j.fade;
+  g.lineCap = 'round';
+  for (let i = 0; i < 4; i++) { // 촉수
+    const x0 = (i - 1.5)*r*.38, len = r*(1.25 + (i % 2)*.3);
+    g.beginPath(); g.moveTo(x0, r*.15);
+    for (let s2 = 1; s2 <= 6; s2++) { const u = s2/6; g.lineTo(x0 + Math.sin(j.t*3 + i + u*4)*r*.16*u, r*.15 + len*u); }
+    g.strokeStyle = '#fff'; g.lineWidth = 6; g.stroke(); g.strokeStyle = j.col; g.lineWidth = 3; g.stroke();
+  }
+  g.scale(1/sq, sq); // 갓
+  g.beginPath(); g.moveTo(-r, r*.2); g.bezierCurveTo(-r, -r*1.15, r, -r*1.15, r, r*.2);
+  for (let i = 0; i < 4; i++) { const x = r - i*r/2; g.quadraticCurveTo(x - r*.25, r*.42, x - r*.5, r*.2); }
+  g.closePath(); g.lineJoin = 'round'; g.strokeStyle = '#fff'; g.lineWidth = 5; g.stroke();
+  g.fillStyle = zap ? '#fff3a8' : j.col; g.globalAlpha = j.fade*.92; g.fill(); g.globalAlpha = j.fade;
+  g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.ellipse(-r*.38, -r*.42, r*.2, r*.12, -.5, 0, Math.PI*2); g.fill();
+  g.fillStyle = C.ink; g.strokeStyle = C.ink; g.lineWidth = 2; // 얼굴
+  if (zap) { [-1, 1].forEach(s2 => { g.beginPath(); g.moveTo(s2*r*.3 - 3, -r*.12 - 3); g.lineTo(s2*r*.3 + 3, -r*.12); g.lineTo(s2*r*.3 - 3, -r*.12 + 3); g.stroke(); }); }
+  else { circ(-r*.3, -r*.12, 2.4); g.fill(); circ(r*.3, -r*.12, 2.4); g.fill(); }
+  g.fillStyle = '#ff8fa8'; circ(-r*.52, r*.02, 3); g.fill(); circ(r*.52, r*.02, 3); g.fill();
+  g.beginPath(); g.arc(0, -r*.02, 2.6, .2, Math.PI - .2); g.stroke();
+  g.restore();
+  if (zap) { g.save(); g.strokeStyle = '#ffe27a'; g.lineWidth = 3; g.lineJoin = 'round';
+    for (let k = 0; k < 4; k++) { const a = k*Math.PI/2 + j.t*6, x1 = j.x + Math.cos(a)*r*1.2, y1 = j.y + Math.sin(a)*r*1.2;
+      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x1 + Math.cos(a)*8 + 4, y1 + Math.sin(a)*8 - 4); g.lineTo(x1 + Math.cos(a)*16, y1 + Math.sin(a)*16); g.stroke(); } g.restore(); }
+}
+
+/* ───────── 오늘의 주문서 ───────── */
+const ORDER_EASY = ['ungeo','sungeo','chamdom','byeongeo','junchi'], ORDER_ALL = ORDER_EASY.concat(['jeoneo','baendaengi','samchi','gwangeo']);
+function newOrder(){
+  ordersN++;
+  const pool = (ordersN === 1 ? ORDER_EASY : ORDER_ALL).slice(), items = [];
+  while (items.length < 3 && pool.length) {
+    const id = pool.splice(Math.floor(Math.random()*pool.length), 1)[0], d = FISH[id];
+    const need = id === 'ungeo' ? 3 + (Math.random()*2|0) : d.grade === 1 ? 2 + (ordersN > 2 && Math.random() < .5 ? 1 : 0) : 1 + (ordersN > 2 && Math.random() < .4 ? 1 : 0);
+    items.push({ id, need, have:0 });
+  }
+  order = { items, bonus: Math.min(1200, 300 + (ordersN - 1)*150), done:false, wait:0 };
+  renderOrder(true);
+}
+function wanted(id){ return !!order && !order.done && order.items.some(it => it.id === id && it.have < it.need); }
+function orderHit(id){
+  if (!order || order.done) return;
+  const it = order.items.find(i => i.id === id && i.have < i.need); if (!it) return;
+  it.have++;
+  if (order.items.every(i => i.have >= i.need)) {
+    order.done = true; order.wait = 1.6; ordersDone++;
+    const pts = order.bonus*(doubleT > 0 ? 2 : 1); score += pts;
+    toast(`주문 완료! +${pts}`, 4); Snd.play('order');
+    pops.push({ x:P.x, y:P.y - 96, t:-.1, txt:`주문 완료 +${pts}`, big:true, col:'#ffe27a' });
+  }
+  renderOrder(order.done);
+}
+function renderOrder(pop){
+  const box = $('order'); if (!order) { box.hidden = true; return; }
+  box.hidden = false; box.classList.toggle('done', order.done);
+  $('oBonus').textContent = order.done ? '완료!' : '+' + order.bonus;
+  $('oList').innerHTML = order.items.map(it => `<div class="orow${it.have >= it.need ? ' ok' : ''}"><img src="${imgSrc(it.id)}" alt=""><span>${FISH[it.id].name}</span><b>${it.have >= it.need ? '✓' : it.have + '/' + it.need}</b></div>`).join('');
+  if (pop) { box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop'); }
+}
+function drawOrderTags(){ // 주문받은 물고기 머리 위 노란 표시
+  if (state !== 'play' || !order || order.done) return;
+  const bob = Math.sin(T*5)*3;
+  for (const f of fishes) {
+    if (!wanted(f.id) || f.x < camX - 40 || f.x > camX + W + 40 || f.y > floorY + 10) continue;
+    const sp = sprOf(f.id); if (!sp) continue;
+    const dh = f.len*SPR_K*sp.h/sp.w, x = f.x, y = f.y - dh*.42 - 14 + bob;
+    g.beginPath(); g.moveTo(x - 7, y - 6); g.lineTo(x + 7, y - 6); g.lineTo(x, y + 3); g.closePath();
+    g.lineJoin = 'round'; g.lineWidth = 5; g.strokeStyle = '#fff'; g.stroke(); g.fillStyle = C.sun; g.fill();
+  }
+}
+
 /* ───────── 맞았는지 가리기 ───────── */
 function hitFish(f, px, py, r){
   const sp = sprOf(f.id); if (!sp) return false;
@@ -689,7 +825,7 @@ function fire(){
     if (best !== null) { P.aim = best; P.face = Math.cos(P.aim) >= 0 ? 1 : -1; }
   }
   fireLatch = 0;
-  const tp = gunTip(); HP.st = 'fly'; HP.x = tp.x; HP.y = tp.y; HP.ang = P.aim; HP.d = 0; HP.fish = null;
+  const tp = gunTip(); HP.st = 'fly'; HP.x = tp.x; HP.y = tp.y; HP.ang = P.aim; HP.d = 0; HP.fishes = []; HP.zap = false;
   Snd.play('shoot'); for (let k=0;k<3;k++) bubble(tp.x, tp.y, rand(2,4));
 }
 function updateHarpoon(dt){
@@ -698,39 +834,48 @@ function updateHarpoon(dt){
   const tp = gunTip();
   if (HP.st === 'ready') { HP.x = tp.x; HP.y = tp.y; HP.ang = P.aim; if (wantFire()) fire(); return; }
   if (HP.st === 'fly') {
-    const dist = HP_SPEED*dt, n = Math.max(1, Math.ceil(dist/7)), sx = Math.cos(HP.ang)*dist/n, sy = Math.sin(HP.ang)*dist/n;
+    // 꿴 물고기가 늘수록 조금씩 느려진다
+    const dist = HP_SPEED*(isFever() ? 1.35 : 1)*Math.pow(.9, HP.fishes.length)*dt, n = Math.max(1, Math.ceil(dist/7)), sx = Math.cos(HP.ang)*dist/n, sy = Math.sin(HP.ang)*dist/n;
     for (let i=0;i<n;i++) {
       HP.x += sx; HP.y += sy; HP.d += dist/n;
+      const j = jellyAt(HP.x, HP.y, 6);
+      if (j) { zapJelly(j); return; }
       const f = fishAt(HP.x, HP.y, 9);
-      if (f) { catchFish(f); return; }
+      if (f) { catchFish(f); if (HP.fishes.length >= SKEW_MAX) { HP.st = 'back'; return; } }
       if (HP.d >= HP_RANGE || HP.y < topY - 24 || HP.y > floorY + 4 || HP.x < -30 || HP.x > WW + 30) {
         HP.st = 'back'; if (HP.y > floorY) { for (let k=0;k<6;k++) puff(HP.x + rand(-10,10), floorY - 2); }
-        Snd.play('plop'); return;
+        if (!HP.fishes.length) Snd.play('plop'); return;
       }
     }
     if (Math.random() < dt*40) bubble(HP.x, HP.y, rand(1.5, 3));
     return;
   }
   // 돌아오는 중
-  const dx = tp.x - HP.x, dy = tp.y - HP.y, d = Math.hypot(dx, dy), stepLen = (HP.fish ? 1050 : 1650)*dt;
+  const nf = HP.fishes.length, stepLen = (nf ? 880*Math.pow(.94, nf - 1) : 1300)*(isFever() ? 1.4 : 1)*dt;
+  const dx = tp.x - HP.x, dy = tp.y - HP.y, d = Math.hypot(dx, dy);
   if (d <= stepLen + 16) {
-    HP.st = 'ready'; HP.cd = .1; HP.x = tp.x; HP.y = tp.y;
-    if (HP.fish) { for (let k=0;k<7;k++) bubble(tp.x + rand(-12,12), tp.y + rand(-12,12), rand(2,5)); for (let k=0;k<5;k++) star(tp.x, tp.y, '#fff', rand(3,6), rand(-150,150), rand(-170,60)); Snd.play('catch'); P.happy = .6; HP.fish = null; }
-  } else { HP.x += dx/d*stepLen; HP.y += dy/d*stepLen; HP.ang = Math.atan2(-dy, -dx); if (HP.fish) { HP.fish.ph += dt*30; } }
+    HP.st = 'ready'; HP.cd = HP.zap ? 1 : .1; HP.x = tp.x; HP.y = tp.y;
+    if (HP.zap) { HP.zap = false; if (!pops.some(q => q.key === 'tangle')) pops.push({ key:'tangle', x:P.x, y:P.y - 70, t:0, txt:'엉켰다! 1초', big:false, col:'#e9d8ff' }); }
+    if (nf) { for (let k=0;k<7;k++) bubble(tp.x + rand(-12,12), tp.y + rand(-12,12), rand(2,5)); for (let k=0;k<5;k++) star(tp.x, tp.y, '#fff', rand(3,6), rand(-150,150), rand(-170,60)); Snd.play('catch'); P.happy = .6; HP.fishes = []; }
+  } else { HP.x += dx/d*stepLen; HP.y += dy/d*stepLen; HP.ang = Math.atan2(-dy, -dx); for (const f of HP.fishes) f.ph += dt*30; }
 }
 
 function catchFish(f){
   const d = f.def, i = fishes.indexOf(f); if (i >= 0) fishes.splice(i, 1);
   if (f.grp) { f.grp.n--; f.grp.scare = 1.1; }
-  HP.st = 'back'; HP.fish = f; f.alpha = 1;
+  f.alpha = 1; HP.fishes.push(f); const k = HP.fishes.length;
   if (state !== 'play') return;
   combo++; comboT = COMBO_TIME; if (combo > maxCombo) maxCombo = combo;
-  const mult = comboMult(combo), pts = Math.round(d.score * mult * (doubleT > 0 ? 2 : 1));
-  score += pts; caught[f.id] = (caught[f.id] || 0) + 1; caughtN++;
+  if (k > skewMax) skewMax = k;
+  const mult = comboMult(combo), pts = Math.round(d.score * mult * k * (doubleT > 0 ? 2 : 1));
+  score += pts; caught[f.id] = (caught[f.id] || 0) + 1; caughtN++; if (isFever()) feverCaught++;
+  if (k >= 2) { for (let q = pops.length - 1; q >= 0; q--) if (pops[q].key === 'skew') pops.splice(q, 1);
+    pops.push({ key:'skew', x:HP.x, y:HP.y - 52, t:-.08, txt:`꼬치 ${k}마리! ×${k}`, big:true, col: k >= 4 ? '#ffe27a' : '#ffd0c4' }); Snd.play('skewer', k); for (let q=0;q<6+k*2;q++) star(HP.x, HP.y, '#ffe27a', rand(3,7), rand(-200,200), rand(-200,100)); }
+  orderHit(f.id);
   const first = !store.dex[f.id];
   store.dex[f.id] = (store.dex[f.id] || 0) + 1; if (first) { newDex.push(f.id); save(); }
   pops.push({ x:HP.x, y:HP.y - 18, t:0, txt:'+' + pts, big: d.grade >= 3 || mult >= 2, col: d.grade >= 4 ? '#ffe27a' : d.grade === 3 ? '#e9d8ff' : '#fff' });
-  if (first) pops.push({ x:HP.x, y:HP.y - 48, t:-.15, txt:'도감 등록!', big:false, col:'#bff3df' });
+  if (first) pops.push({ x:HP.x, y:HP.y + 30, t:-.15, txt:'도감 등록!', big:false, col:'#bff3df' });
   for (let k=0;k<10;k++) drop(HP.x, HP.y, rand(-190,190), rand(-220,40));
   ring(HP.x, HP.y, d.grade >= 3 ? '#ffe27a' : '#fff');
   if (d.grade >= 3) for (let k=0;k<12;k++) star(HP.x, HP.y, d.grade >= 4 ? '#ffe27a' : '#fff', rand(4,9), rand(-220,220), rand(-240,120));
@@ -787,9 +932,24 @@ function runEvent(type){
 function rareToast(id, msg){ const d = FISH[id]; toast(store.dex[id] ? msg : '어라? 저건 처음 보는 물고기인데?', d.grade); Snd.play('rare'); }
 function updateSpawner(dt){
   spawnT -= dt;
-  if (spawnT <= 0) { spawnT = .32; if (fishes.length < targetCount()) spawnRandom(false); }
+  if (spawnT <= 0) { const fv = isFever(); spawnT = fv ? .12 : .32; if (fishes.length < targetCount()*(fv ? 1.6 : 1)) spawnRandom(false); }
   for (let i = queue.length - 1; i >= 0; i--) { const q = queue[i]; q.t -= dt; if (q.t <= 0) { makeFish(q.id, q); queue.splice(i, 1); } }
   if (state !== 'play') return;
+  // 주문받은 물고기가 근처에 없으면 화면 가장자리에서 들여보낸다 (주문이 운에 막히지 않게)
+  orderFeedT -= dt;
+  if (orderFeedT <= 0 && order && !order.done) {
+    orderFeedT = 2.2;
+    for (const it of order.items) {
+      if (it.have >= it.need) continue;
+      const near = fishes.filter(f => f.id === it.id && f.x > camX - W*.4 && f.x < camX + W*1.4).length;
+      if (near >= (it.id === 'ungeo' ? 3 : 1)) continue;
+      const side = Math.random() < .5 ? -1 : 1, x = edgeX(side, 90);
+      if (it.id === 'ungeo') makeSchool(5, { side, x: edgeX(side, 150) });
+      else if (it.id === 'gwangeo') makeFish('gwangeo', { side, x });
+      else makeFish(it.id, { side, x });
+      break;
+    }
+  }
   const el = 90 - timeLeft;
   while (events.length && events[0].t <= el) runEvent(events.shift().type);
   // 처음 보는 종이 화면에 들어오면 한 번 알려 준다
@@ -800,16 +960,19 @@ function updateSpawner(dt){
 
 /* ───────── 한 판 ───────── */
 function resetWorld(){
-  fishes = []; groups = []; parts = []; pops = []; queue = [];
-  HP.st = 'ready'; HP.fish = null; HP.cd = 0;
+  fishes = []; groups = []; parts = []; pops = []; queue = []; jellies = [];
+  HP.st = 'ready'; HP.fishes = []; HP.cd = 0; HP.zap = false;
+  for (let i = 0; i < jellyTarget(); i++) makeJelly(true);
   const n = targetCount(); let guard = 0; while (fishes.length < n && guard++ < 80) spawnRandom(true);
 }
 function startGame(){
   Snd.unlock(); resize(); resetWorld();
-  state = 'play'; timeLeft = 90; score = 0; combo = 0; comboT = 0; maxCombo = 0; doubleT = 0; caught = {}; caughtN = 0; newDex = []; newBest = false; seenToast = {}; lastTick = 0; shake = 0;
+  state = 'play'; timeLeft = 90; score = 0; combo = 0; comboT = 0; maxCombo = 0; doubleT = 0; caught = {}; caughtN = 0; newDex = []; newBest = false; seenToast = {}; lastTick = 0; shake = 0; ordersN = 0; ordersDone = 0; skewMax = 0; feverOn = false; feverCaught = 0;
   P.x = WW/2; P.y = lerp(topY, floorY, .5); P.vx = P.vy = 0; P.aim = 0; P.face = 1; camX = clamp(P.x - W/2, 0, WW - W);
   // 시작 자리 바로 옆은 비워 둔다
   fishes = fishes.filter(f => f.grp || Math.hypot(f.x - P.x, f.y - P.y) > 120);
+  jellies = jellies.filter(j => Math.abs(j.x - P.x) > 200);
+  order = null; newOrder(); $('fever').hidden = true; $('dbl').style.top = '';
   buildEvents(); store.plays = (store.plays || 0) + 1; save();
   mouse.down = false; fireHeld = false; spaceHeld = false; aimT.id = null; aimT.down = false; joy.id = null; showJoy(false);
   hideScreens(); $('hud').hidden = false; $('dbl').hidden = true; $('combo').hidden = true; app.classList.add('playing');
@@ -825,10 +988,11 @@ function endGame(){
   Snd.music(null); Snd.play('over'); updateHud(true);
 }
 function showResult(){
-  $('hud').hidden = true; $('combo').hidden = true; $('dbl').hidden = true;
+  $('hud').hidden = true; $('combo').hidden = true; $('dbl').hidden = true; $('order').hidden = true; $('fever').hidden = true;
   $('rTitle').textContent = score >= 9000 ? '대풍어!' : score >= 3500 ? '오늘은 만선!' : '어획 끝!';
   $('rNew').hidden = !newBest;
   $('rCount').textContent = caughtN + '마리'; $('rCombo').textContent = maxCombo;
+  $('rSkew').textContent = skewMax ? skewMax + '마리' : '-'; $('rOrder').textContent = ordersDone + '번'; $('rFever').textContent = feverCaught + '마리';
   const ids = Object.keys(caught).sort((a,b) => FISH[b].grade - FISH[a].grade || FISH[b].score - FISH[a].score);
   $('rRare').textContent = ids.length ? FISH[ids[0]].name.replace('13번째 물고기', '13번째') : '-';
   $('rCatch').innerHTML = ids.length ? ids.map(id => `<div><img src="${imgSrc(id)}" alt=""><i>×${caught[id]}</i>${FISH[id].name.replace('13번째 물고기', '13번째')}</div>`).join('')
@@ -840,7 +1004,7 @@ function showResult(){
   (function tick(){ const k = Math.min(1, (performance.now() - t0)/800); el.textContent = Math.round(to*(1 - Math.pow(1-k, 3))).toLocaleString(); if (k < 1) requestAnimationFrame(tick); })();
 }
 function goMenu(){
-  state = 'menu'; app.classList.remove('playing'); $('hud').hidden = true; $('combo').hidden = true; $('dbl').hidden = true; $('touchUI').hidden = true;
+  state = 'menu'; app.classList.remove('playing'); $('hud').hidden = true; $('combo').hidden = true; $('dbl').hidden = true; $('order').hidden = true; $('fever').hidden = true; order = null; $('touchUI').hidden = true;
   resetWorld(); P.x = WW/2; P.y = lerp(topY, floorY, .52); P.vx = P.vy = 0; camX = clamp(WW/2 - W/2, 0, Math.max(0, WW - W));
   refreshMenu(); showScreen('scrStart'); Snd.music('menu'); Snd.duck(false);
 }
@@ -1064,7 +1228,10 @@ function drawHarpoon(){
   const mx = (tp.x + HP.x)/2, my = (tp.y + HP.y)/2 + Math.min(26, Math.hypot(HP.x - tp.x, HP.y - tp.y)*.07);
   g.lineCap = 'round'; g.beginPath(); g.moveTo(tp.x, tp.y); g.quadraticCurveTo(mx, my, HP.x - Math.cos(HP.ang)*16, HP.y - Math.sin(HP.ang)*16);
   g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 5; g.stroke(); g.strokeStyle = '#f6c445'; g.lineWidth = 2.2; g.stroke();
-  if (HP.fish) { const f = HP.fish; drawFish(f, HP.x + Math.cos(HP.ang)*f.len*.18, HP.y + Math.sin(HP.ang)*f.len*.18, Math.sin(T*30)*.14, .92); }
+  { // 꿴 물고기들: 먼저 꿴 놈이 작살 끝 쪽, 나중 놈이 그 뒤로 줄줄이
+    const ux = Math.cos(HP.ang), uy = Math.sin(HP.ang); let off = HP.st === 'back' ? -8 : 6;
+    for (let i = 0; i < HP.fishes.length; i++) { const f = HP.fishes[i]; drawFish(f, HP.x - ux*off, HP.y - uy*off, Math.sin(T*30 + i)*.12, .9); off += Math.min(46, f.len*.34); }
+  }
   g.save(); g.translate(HP.x, HP.y); g.rotate(HP.ang); g.lineJoin = 'round';
   for (let pass = 0; pass < 2; pass++) {
     const O = pass === 0;
@@ -1127,10 +1294,12 @@ function render(){
   drawSand();
   g.save(); g.translate(-camX, 0);
   for (const f of fishes) { if (f.def.ai === 'burrow') continue; if (f.x < camX - 200 || f.x > camX + W + 200) continue; drawFish(f); }
-  drawAim(); drawHarpoon(); drawDiver(); drawParts();
+  for (const j of jellies) if (j.x > camX - 60 && j.x < camX + W + 60) drawJelly(j);
+  drawOrderTags(); drawAim(); drawHarpoon(); drawDiver(); drawParts();
   g.restore();
   drawFront();
   if (doubleT > 0) { const a = .16 + Math.sin(T*6)*.05, vg = g.createRadialGradient(W/2, H/2, Math.min(W, H)*.36, W/2, H/2, Math.max(W, H)*.72); vg.addColorStop(0, 'rgba(246,196,69,0)'); vg.addColorStop(1, `rgba(246,196,69,${a*2})`); g.fillStyle = vg; g.fillRect(0, 0, W, H); }
+  if (isFever()) { const a = .2 + Math.sin(T*10)*.07, vg = g.createRadialGradient(W/2, H/2, Math.min(W, H)*.3, W/2, H/2, Math.max(W, H)*.7); vg.addColorStop(0, 'rgba(239,111,90,0)'); vg.addColorStop(1, `rgba(238,93,140,${a*2})`); g.fillStyle = vg; g.fillRect(0, 0, W, H); }
   drawIndicators();
   g.restore();
   drawCrosshair();
@@ -1145,10 +1314,12 @@ function update(dt, real){
     if (comboT > 0) { comboT -= dt; if (comboT <= 0) { combo = 0; } }
     if (doubleT > 0) { doubleT -= dt; if (doubleT <= 0) $('dbl').hidden = true; }
     const sec = Math.ceil(timeLeft); if (sec <= 10 && sec !== lastTick && sec > 0) { lastTick = sec; Snd.play('tick'); if (sec === 10) Snd.hurry(true); }
+    if (timeLeft <= 10 && !feverOn) { feverOn = true; $('fever').hidden = false; $('dbl').style.top = '170px'; toast('피버 타임! 물고기가 쏟아진다!', 5); Snd.play('fever'); for (let i = 0; i < 6; i++) spawnRandom(false); }
+    if (order && order.done) { order.wait -= dt; if (order.wait <= 0) newOrder(); }
     if (timeLeft <= 0) { endGame(); return; }
   } else if (state === 'over') { overT += real || dt; if (overT > 1.3) { state = 'done'; showResult(); } }
   if (shake > 0) shake -= dt;
-  updatePlayer(dt); updateHarpoon(dt); updateSpawner(dt); updateFish(dt); updateParts(dt);
+  updatePlayer(dt); updateHarpoon(dt); updateSpawner(dt); updateFish(dt); updateJellies(dt); updateParts(dt);
   if (Math.random() < dt*1.6) bubble(camX + rand(0, W), floorY - rand(0, 40), rand(2, 5));
   const look = state === 'play' ? Math.cos(P.aim)*W*.07 : 0, camTo = state === 'menu' ? WW/2 - W/2 : P.x - W/2 + look;
   camX = lerp(camX, clamp(camTo, 0, Math.max(0, WW - W)), Math.min(1, dt*5));
@@ -1231,7 +1402,7 @@ $('scrStart').addEventListener('pointerdown', () => { Snd.unlock(); if (state ==
 
 async function share(){
   const url = location.href.split('#')[0];
-  const text = `14탄 피쉬게임에서 ${score.toLocaleString()}점! 물고기 ${caughtN}마리, 최고 ${maxCombo}콤보 🔱\n이상한 바다에서 너도 작살 한 번 쏴 봐`;
+  const text = `14탄 피쉬게임에서 ${score.toLocaleString()}점! 물고기 ${caughtN}마리, 최고 ${maxCombo}콤보, 꼬치 ${skewMax}마리 🔱\n이상한 바다에서 너도 작살 한 번 쏴 봐`;
   try { if (navigator.share) { await navigator.share({ title:'14탄 피쉬게임', text, url }); return; } } catch(e){ if (e && e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(text + '\n' + url); toast('복사했어요. 붙여 넣어 자랑해 보세요!', 5); } catch(e){ toast('복사가 막혀 있어요. 주소창 링크를 보내 주세요', 5); }
 }
@@ -1244,7 +1415,9 @@ function botThink(){
   for (const f of fishes) {
     if (f.y > floorY + 10) continue; const dx = f.x - pv.x, dy = f.y - pv.y, dist = Math.hypot(dx, dy);
     if (f.x < camX + 10 || f.x > camX + W - 10) { if (f.def.grade < 3) continue; }
-    const v = f.def.score / (60 + dist) * (dist < HP_RANGE*.8 ? 1.6 : 1); if (v > bs) { bs = v; best = f; }
+    let v = f.def.score / (60 + dist) * (dist < HP_RANGE*.8 ? 1.6 : 1) * (wanted(f.id) ? 1.8 : 1);
+    if (bot.skill >= .5) { const a = Math.atan2(dy, dx); for (const j of jellies) { const jd = Math.hypot(j.x - pv.x, j.y - pv.y); if (jd < dist && Math.abs(Math.atan2(j.y - pv.y, j.x - pv.x) - a) < .14) { v *= .1; break; } } }
+    if (v > bs) { bs = v; best = f; }
   }
   bot.fire = false; bot.ix = 0; bot.iy = 0;
   if (!best) { bot.ix = Math.sin(T*.5); return; }
@@ -1258,12 +1431,12 @@ function botThink(){
   if (dist < HP_RANGE*.85 && HP.st === 'ready') bot.fire = !(bot.wait > 0);
 }
 if (AUTOTEST) window.__g = {
-  state: () => ({ state, timeLeft, score, combo, maxCombo, caught, caughtN, fish: fishes.length, hp: HP.st, px: P.x, py: P.y, camX, W, H, WW, S, best: store.best, dex: Object.keys(store.dex).length, newBest, events: events.length, parts: parts.length }),
+  state: () => ({ skewMax, ordersDone, feverCaught, jellies: jellies.length, order: order && order.items.map(i => i.id + i.have + '/' + i.need).join(','), state, timeLeft, score, combo, maxCombo, caught, caughtN, fish: fishes.length, hp: HP.st, px: P.x, py: P.y, camX, W, H, WW, S, best: store.best, dex: Object.keys(store.dex).length, newBest, events: events.length, parts: parts.length }),
   start: startGame, end: endGame, pause: pauseGame, resume: resumeGame, menu: goMenu,
   bot(on, speed, skill){ bot.on = on; bot.speed = speed || 1; bot.skill = skill == null ? 1 : skill; },
   setTime(t){ timeLeft = t; }, fishes: () => fishes.map(f => ({ id:f.id, x:f.x, y:f.y, st:f.st })),
   spawn(id, x, y){ return makeFish(id, { x, y, side:-1 }); }, event: runEvent, P, HP, setAim(a){ P.aim = a; },
-  toast, store: () => store
+  toast, store: () => store, fire(){ HP.cd = 0; fire(); }, jellies: () => jellies, freeze(on){ for (const f of fishes) { f.def = on ? Object.assign({}, f.def, { speed: 0.001 }) : FISH[f.id]; } }
 };
 
 /* ───────── 시작 ───────── */
